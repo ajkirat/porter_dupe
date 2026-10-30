@@ -39,6 +39,10 @@ Drivers pay the operator outside the app (UPI to `NEXT_PUBLIC_OPERATOR_UPI`, the
 
 ## Setup
 
+**New to this? Follow [docs/SETUP.md](docs/SETUP.md)**: step by step from zero to a live Vercel URL and a test delivery.
+
+Short version:
+
 1. **Create a Supabase project** (free tier is enough to start).
 2. **Run the SQL**: open the SQL editor and run `supabase/migrations/0001_init.sql`, then `0002_storage.sql`. (Or use the Supabase CLI: `supabase link` then `supabase db push`.)
 3. **Turn on phone auth**: Authentication → Providers → Phone. Pick an SMS provider (Twilio, MessageBird, Vonage or Textlocal). For development you can skip the provider and add test numbers with fixed OTPs under "Phone numbers for testing".
@@ -53,7 +57,7 @@ Drivers pay the operator outside the app (UPI to `NEXT_PUBLIC_OPERATOR_UPI`, the
    update profiles set is_admin = true where phone = '91XXXXXXXXXX';
    ```
 
-Deploy anywhere that runs Next.js (Vercel's free tier works); set the same environment variables there.
+Deploy anywhere that runs Next.js. On Vercel, import the repo and set the same environment variables; no extra config is needed, and every branch or pull request gets its own preview URL.
 
 ### Before real traffic
 
