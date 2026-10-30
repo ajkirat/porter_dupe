@@ -1,0 +1,113 @@
+"use client";
+
+import { useState } from "react";
+import { errorText, supabase } from "@/lib/supabase";
+import { KYC_DOCS, type Driver, type DriverPass, type KycStatus } from "@/lib/types";
+
+// KYC review and pass management.
+export default function DriversTab({
+  drivers,
+  activePass,
+  reload,
+}: {
+  drivers: Driver[];
+  activePass: Record<string, DriverPass>;
+  reload: () => void;
+}) {
+  const [filter, setFilter] = useState<KycStatus | "all">("pending");
+  const [error, setError] = useState("");
+  const shown = drivers.filter((d) => filter === "all" || d.kyc_status === filter);
+
+  async function openDoc(path: string) {
+    const { data, error } = await supabase().storage.from("kyc").createSignedUrl(path, 300);
+    if (error) return setError(errorText(error));
+    window.open(data.signedUrl, "_blank");
+  }
+
+  async function setKyc(d: Driver, status: KycStatus) {
+    const note = status === "rejected" ? prompt("Reason shown to the driver", "Licence photo is not clear") : null;
+    if (status === "rejected" && note === null) return;
+    const { error } = await supabase().from("drivers").update({ kyc_status: status, kyc_note: note }).eq("id", d.id);
+    if (error) setError(errorText(error));
+    reload();
+  }
+
+  async function addPass(d: Driver, kind: "daily" | "weekly") {
+    const note = prompt(`Record a ${kind} pass for ${d.full_name}. Payment reference (optional):`, "");
+    if (note === null) return;
+    const { error } = await supabase().rpc("admin_add_pass", { p_driver: d.id, p_kind: kind, p_note: note || null });
+    if (error) setError(errorText(error));
+    reload();
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2 text-sm">
+        {(["pending", "approved", "rejected", "all"] as const).map((f) => (
+          <button key={f} className={`btn py-1.5 ${filter === f ? "btn-primary" : ""}`} onClick={() => setFilter(f)}>
+            {f} ({f === "all" ? drivers.length : drivers.filter((d) => d.kyc_status === f).length})
+          </button>
+        ))}
+      </div>
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      {shown.length === 0 && <p className="text-sm text-stone-500">No drivers here.</p>}
+      {shown.map((d) => {
+        const pass = activePass[d.id];
+        return (
+          <div key={d.id} className="card space-y-2 text-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="font-semibold">
+                {d.full_name} <span className="font-normal text-stone-500">· {d.phone}</span>
+              </p>
+              <span className="text-xs text-stone-500">
+                {d.is_online ? "Online" : "Offline"}
+                {d.last_seen_at && ` · seen ${new Date(d.last_seen_at).toLocaleString("en-IN")}`}
+              </span>
+            </div>
+            <p className="text-stone-600">
+              {d.vehicle_number} · licence {d.licence_number} {d.upi_id && `· UPI ${d.upi_id}`}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {KYC_DOCS.map((doc) =>
+                d.kyc_docs[doc.key] ? (
+                  <button key={doc.key} className="btn py-1 text-xs" onClick={() => openDoc(d.kyc_docs[doc.key])}>
+                    {doc.label}
+                  </button>
+                ) : (
+                  <span key={doc.key} className="text-xs text-red-600">
+                    {doc.label} missing
+                  </span>
+                ),
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 border-t border-stone-100 pt-2">
+              {d.kyc_status !== "approved" && (
+                <button className="btn btn-primary py-1.5" onClick={() => setKyc(d, "approved")}>
+                  Approve
+                </button>
+              )}
+              {d.kyc_status !== "rejected" && (
+                <button className="btn btn-danger py-1.5" onClick={() => setKyc(d, "rejected")}>
+                  {d.kyc_status === "approved" ? "Suspend" : "Reject"}
+                </button>
+              )}
+              {d.kyc_status === "approved" && (
+                <>
+                  <span className="text-xs text-stone-600">
+                    {pass ? `Pass until ${new Date(pass.ends_at).toLocaleString("en-IN")}` : "No active pass"}
+                  </span>
+                  <button className="btn py-1.5" onClick={() => addPass(d, "daily")}>
+                    + Day pass
+                  </button>
+                  <button className="btn py-1.5" onClick={() => addPass(d, "weekly")}>
+                    + Week pass
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
