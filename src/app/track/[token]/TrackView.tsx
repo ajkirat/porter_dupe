@@ -32,7 +32,7 @@ export default function TrackView() {
   const [missing, setMissing] = useState(false);
 
   useEffect(() => {
-    if (!isConfigured) return;
+    if (!isConfigured()) return;
     const load = () =>
       supabase()
         .rpc("get_tracking", { p_token: token })
@@ -46,7 +46,7 @@ export default function TrackView() {
     return () => clearInterval(poll);
   }, [token]);
 
-  if (!isConfigured) return <SetupNotice />;
+  if (!isConfigured()) return <SetupNotice />;
   if (missing) return <p className="text-center text-stone-500">This tracking link isn&apos;t valid.</p>;
   if (!t) return <p className="text-center text-stone-500">Loading…</p>;
 

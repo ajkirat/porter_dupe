@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import ConfigGate from "@/components/ConfigGate";
 import RegisterSW from "@/components/RegisterSW";
 import { APP_NAME, TAGLINE } from "@/lib/brand";
 import "./globals.css";
@@ -18,7 +19,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-dvh">
-        {children}
+        <ConfigGate>{children}</ConfigGate>
         <RegisterSW />
       </body>
     </html>

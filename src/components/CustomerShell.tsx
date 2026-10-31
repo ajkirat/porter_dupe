@@ -13,7 +13,7 @@ import { useSession } from "./useSession";
 export default function CustomerShell({ children }: { children: ReactNode }) {
   const { user, profile, loading } = useSession();
 
-  if (!isConfigured)
+  if (!isConfigured())
     return (
       <div className="p-4 pt-10">
         <SetupNotice />

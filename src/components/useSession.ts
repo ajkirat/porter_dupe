@@ -8,7 +8,7 @@ import type { Profile } from "@/lib/types";
 export function useSession() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(isConfigured);
+  const [loading, setLoading] = useState(isConfigured());
 
   const loadProfile = useCallback(async (u: User | null) => {
     setUser(u);
@@ -22,7 +22,7 @@ export function useSession() {
   }, []);
 
   useEffect(() => {
-    if (!isConfigured) return;
+    if (!isConfigured()) return;
     const sb = supabase();
     sb.auth.getUser().then(({ data }) => loadProfile(data.user));
     const { data: sub } = sb.auth.onAuthStateChange((_event, session) => loadProfile(session?.user ?? null));
