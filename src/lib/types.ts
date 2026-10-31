@@ -58,6 +58,7 @@ export type Job = {
   duration_s: number | null;
   fare_rupees: number;
   payment_mode: "cash" | "upi_to_driver";
+  pay_at: "pickup" | "drop";
   tracking_token: string;
   cancel_reason: string | null;
   created_at: string;
@@ -95,3 +96,5 @@ export const STATUS_LABEL: Record<JobStatus, string> = {
 };
 
 export const ACTIVE_STATUSES: JobStatus[] = ["requested", "assigned", "accepted", "picked_up"];
+
+export const PAY_AT_LABEL: Record<Job["pay_at"], string> = { pickup: "at pickup", drop: "at drop" };

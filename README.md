@@ -45,7 +45,7 @@ Drivers pay the operator outside the app (UPI to `NEXT_PUBLIC_OPERATOR_UPI`, the
 Short version:
 
 1. **Create a Supabase project** (free tier is enough to start).
-2. **Run the SQL**: open the SQL editor and run `supabase/migrations/0001_init.sql`, then `0002_storage.sql`. (Or use the Supabase CLI: `supabase link` then `supabase db push`.)
+2. **Run the SQL**: open the SQL editor and run `supabase/migrations/0001_init.sql`, then `0002_storage.sql`, then `0003_pay_at_and_tracking.sql`. (Or use the Supabase CLI: `supabase link` then `supabase db push`.)
 3. **Turn on phone auth**: Authentication → Providers → Phone. Pick an SMS provider (Twilio, MessageBird, Vonage or Textlocal). For development you can skip the provider and add test numbers with fixed OTPs under "Phone numbers for testing".
 4. **Configure the app**:
    ```bash

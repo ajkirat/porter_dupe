@@ -20,6 +20,7 @@ You'll need: a GitHub login (you have one), and an email address to sign up for 
 2. Open [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql) on GitHub, click **Raw**, select all and copy.
 3. Paste it into the SQL editor and click **Run**. You should see "Success. No rows returned".
 4. Click **+** for a new query, and do the same with [`supabase/migrations/0002_storage.sql`](../supabase/migrations/0002_storage.sql).
+5. Click **+** once more and do the same with [`supabase/migrations/0003_pay_at_and_tracking.sql`](../supabase/migrations/0003_pay_at_and_tracking.sql). It adds the "pay at pickup or drop" choice.
 
 Check: **Table Editor** in the sidebar now lists `drivers`, `jobs`, `profiles`, `settings` and a few more.
 

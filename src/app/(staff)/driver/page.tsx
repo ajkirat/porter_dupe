@@ -10,7 +10,8 @@ import DriverSignup from "./DriverSignup";
 import JobCard from "./JobCard";
 
 const OPERATOR_UPI = process.env.NEXT_PUBLIC_OPERATOR_UPI;
-const LOCATION_PUSH_MS = 15000;
+const LOCATION_PUSH_IDLE_MS = 15000;
+const LOCATION_PUSH_TRIP_MS = 4000; // fast enough that customers see the bike move
 
 function DriverHome({ userId, phone }: { userId: string; phone: string }) {
   const [driver, setDriver] = useState<Driver | null | undefined>(undefined);
@@ -79,6 +80,7 @@ function ApprovedDriver({ driver, pass, reload }: { driver: Driver; pass: Driver
   const [error, setError] = useState("");
   const [prices, setPrices] = useState({ daily_pass_price: 75, weekly_pass_price: 500 });
   const lastPush = useRef(0);
+  const pushEvery = useRef(LOCATION_PUSH_IDLE_MS);
 
   useEffect(() => {
     supabase()
@@ -112,7 +114,7 @@ function ApprovedDriver({ driver, pass, reload }: { driver: Driver; pass: Driver
       (pos) => {
         const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setMe(p);
-        if (Date.now() - lastPush.current > LOCATION_PUSH_MS) {
+        if (Date.now() - lastPush.current > pushEvery.current) {
           lastPush.current = Date.now();
           supabase().rpc("driver_set_location", { p_lat: p.lat, p_lng: p.lng });
         }
@@ -148,6 +150,10 @@ function ApprovedDriver({ driver, pass, reload }: { driver: Driver; pass: Driver
   }
 
   const current = myJobs.find((j) => j.status === "accepted" || j.status === "picked_up");
+  const onTrip = Boolean(current);
+  useEffect(() => {
+    pushEvery.current = onTrip ? LOCATION_PUSH_TRIP_MS : LOCATION_PUSH_IDLE_MS;
+  }, [onTrip]);
   const offers = myJobs.filter((j) => j.status === "assigned");
 
   return (

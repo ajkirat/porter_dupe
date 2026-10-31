@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BackIcon, CheckIcon, PhoneIcon, ShareIcon } from "@/components/icons";
 import Map, { type MapMarker } from "@/components/Map";
 import Sheet from "@/components/Sheet";
-import { formatKm } from "@/lib/fare";
+import { formatKm, formatMinutes } from "@/lib/fare";
+import { getRoute } from "@/lib/geo";
 import { errorText, supabase } from "@/lib/supabase";
-import type { Driver, Job, JobStatus } from "@/lib/types";
+import { PAY_AT_LABEL, type Driver, type Job, type JobStatus } from "@/lib/types";
 
 type Secrets = { pickup_otp: string; drop_otp: string };
 
@@ -32,6 +33,9 @@ export default function OrderView() {
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sheetH, setSheetH] = useState(340);
+  const [eta, setEta] = useState<{ status: JobStatus; distanceM: number; durationS: number | null; coords: [number, number][] } | null>(null);
+  const [now, setNow] = useState(0);
+  const lastEta = useRef<{ status: JobStatus; at: number } | null>(null);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -58,12 +62,49 @@ export default function OrderView() {
       .channel(`job-${id}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "jobs", filter: `id=eq.${id}` }, () => load())
       .subscribe();
-    const poll = setInterval(load, 10000);
+    const poll = setInterval(load, 5000);
     return () => {
       sb.removeChannel(channel);
       clearInterval(poll);
     };
   }, [id, load]);
+
+  // Live driver position: pushed by the database as the driver's phone reports it.
+  const driverId = job?.driver_id;
+  useEffect(() => {
+    if (!driverId) return;
+    const sb = supabase();
+    const channel = sb
+      .channel(`driver-${driverId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "drivers", filter: `id=eq.${driverId}` }, (payload) => {
+        setDriver((prev) => (prev ? { ...prev, ...(payload.new as Partial<Driver>) } : prev));
+      })
+      .subscribe();
+    return () => {
+      sb.removeChannel(channel);
+    };
+  }, [driverId]);
+
+  // Clock for "updated Ns ago".
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 5000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Road distance and time from the driver to the next stop, refreshed at most every 15 seconds.
+  const driverLat = driver?.last_lat;
+  const driverLng = driver?.last_lng;
+  const status = job?.status;
+  useEffect(() => {
+    if (!job || driverLat == null || driverLng == null || (status !== "accepted" && status !== "picked_up")) return;
+    const last = lastEta.current;
+    if (last && last.status === status && Date.now() - last.at < 15000) return;
+    lastEta.current = { status, at: Date.now() };
+    const target = status === "accepted" ? { lat: job.pickup_lat, lng: job.pickup_lng } : { lat: job.drop_lat, lng: job.drop_lng };
+    getRoute({ lat: driverLat, lng: driverLng }, target).then((r) =>
+      setEta({ status, distanceM: r.distanceM, durationS: r.durationS, coords: r.coords }),
+    );
+  }, [driverLat, driverLng, status, job]);
 
   if (notFound) return <p className="p-6 text-stone-500">Order not found.</p>;
   if (!job) return <p className="p-6 text-stone-500">Loading…</p>;
@@ -77,6 +118,9 @@ export default function OrderView() {
   if (driver?.last_lat && driver.last_lng && (job.status === "accepted" || job.status === "picked_up")) {
     markers.push({ pos: { lat: driver.last_lat, lng: driver.last_lng }, label: driver.full_name, kind: "driver" });
   }
+  const tracking = job.status === "accepted" || job.status === "picked_up";
+  const liveEta = tracking && eta?.status === job.status ? eta : null;
+  const seenAgo = driver?.last_seen_at && now > 0 ? Math.max(0, Math.round((now - new Date(driver.last_seen_at).getTime()) / 1000)) : null;
   // The OTP the customer needs to read out next.
   const otp = job.status === "picked_up" ? { label: "Drop OTP", hint: "Give this to the receiver. The driver asks for it at delivery.", value: secrets?.drop_otp } : { label: "Pickup OTP", hint: "Tell the driver this when they collect the parcel.", value: secrets?.pickup_otp };
 
@@ -99,7 +143,7 @@ export default function OrderView() {
 
   return (
     <div className="absolute inset-0">
-      <Map markers={markers} padBottom={sheetH + 24} className="absolute inset-0 h-full" />
+      <Map markers={markers} route={liveEta?.coords} padBottom={sheetH + 24} className="absolute inset-0 h-full" />
       <Link href="/orders" className="absolute left-4 top-4 z-10 rounded-full bg-white p-3 shadow-lg" aria-label="Back to orders">
         <BackIcon className="h-5 w-5" />
       </Link>
@@ -113,6 +157,25 @@ export default function OrderView() {
           <p className="text-xl font-bold">₹{job.fare_rupees}</p>
         </div>
 
+        {tracking && (
+          <div className="mt-3 flex items-center justify-between rounded-xl bg-blue-50 px-3 py-2 text-sm text-blue-900">
+            {driver?.last_lat != null ? (
+              <>
+                <span className="font-medium">
+                  {liveEta ? `${formatKm(liveEta.distanceM)} away · about ${formatMinutes(liveEta.durationS)}` : "Driver location live"}
+                  {job.status === "accepted" ? " to pickup" : " to drop"}
+                </span>
+                <span className="flex items-center gap-1.5 text-xs">
+                  <span className={`h-2 w-2 rounded-full ${seenAgo !== null && seenAgo > 60 ? "bg-amber-500" : "animate-pulse bg-green-500"}`} />
+                  {seenAgo === null ? "Live" : seenAgo > 60 ? "Signal lost" : seenAgo < 10 ? "Live" : `${seenAgo}s ago`}
+                </span>
+              </>
+            ) : (
+              <span>Waiting for the driver&apos;s location…</span>
+            )}
+          </div>
+        )}
+
         {job.status !== "cancelled" && (
           <div className="mt-3 flex gap-1.5">
             {[1, 2, 3, 4].map((n) => (
@@ -125,7 +188,7 @@ export default function OrderView() {
           <div className="mt-4 flex items-center gap-3 rounded-2xl bg-green-50 p-4 text-green-800">
             <CheckIcon className="h-8 w-8" />
             <p className="text-sm">
-              Delivered. Please pay the driver ₹{job.fare_rupees} by {job.payment_mode === "cash" ? "cash" : "UPI"} if you haven&apos;t already.
+              Delivered. ₹{job.fare_rupees} is paid to the driver {PAY_AT_LABEL[job.pay_at]} by {job.payment_mode === "cash" ? "cash" : "UPI"}. If that hasn&apos;t happened yet, please settle it with the driver now.
             </p>
           </div>
         )}
@@ -164,7 +227,7 @@ export default function OrderView() {
             {job.drop_address}
           </p>
           <p className="pt-1 text-xs text-stone-500">
-            {formatKm(job.distance_m)} · pay the driver by {job.payment_mode === "cash" ? "cash" : "UPI"} · receiver {job.receiver_name}
+            {formatKm(job.distance_m)} · ₹{job.fare_rupees} to the driver {PAY_AT_LABEL[job.pay_at]} by {job.payment_mode === "cash" ? "cash" : "UPI"} · receiver {job.receiver_name}
           </p>
         </div>
 

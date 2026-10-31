@@ -71,7 +71,13 @@ export default function ActiveJob({ job, me, onChange }: { job: Job; me: LatLng 
         </label>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button className="btn btn-primary w-full py-3" disabled={busy || otp.length !== 4}>
-          {atPickupLeg ? "Confirm pickup" : `Confirm delivery · collect ₹${job.fare_rupees}`}
+          {atPickupLeg
+            ? job.pay_at === "pickup"
+              ? `Confirm pickup · collect ₹${job.fare_rupees}`
+              : "Confirm pickup"
+            : job.pay_at === "drop"
+              ? `Confirm delivery · collect ₹${job.fare_rupees}`
+              : "Confirm delivery"}
         </button>
       </form>
     </div>

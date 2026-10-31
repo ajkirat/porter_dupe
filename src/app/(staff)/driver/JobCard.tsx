@@ -1,6 +1,6 @@
 import { formatKm, formatMinutes } from "@/lib/fare";
 import { haversineM, type LatLng } from "@/lib/geo";
-import type { Job } from "@/lib/types";
+import { PAY_AT_LABEL, type Job } from "@/lib/types";
 
 export default function JobCard({ job, from, children }: { job: Job; from?: LatLng | null; children?: React.ReactNode }) {
   const away = from ? haversineM(from, { lat: job.pickup_lat, lng: job.pickup_lng }) : null;
@@ -20,7 +20,9 @@ export default function JobCard({ job, from, children }: { job: Job; from?: LatL
         <span className="text-red-600">●</span> {job.drop_address}
       </p>
       {job.item_note && <p className="text-xs text-stone-500">Item: {job.item_note}</p>}
-      <p className="text-xs text-stone-500">Customer pays you by {job.payment_mode === "cash" ? "cash" : "UPI"}</p>
+      <p className="rounded-lg bg-orange-50 px-3 py-2 text-sm font-medium text-orange-900">
+        Collect ₹{job.fare_rupees} {PAY_AT_LABEL[job.pay_at]} by {job.payment_mode === "cash" ? "cash" : "UPI"}
+      </p>
       {children}
     </div>
   );

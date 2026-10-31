@@ -23,6 +23,9 @@ type Tracking = {
   driver_lng: number | null;
   driver_seen_at: string | null;
   delivered_at: string | null;
+  fare_rupees: number;
+  pay_at: "pickup" | "drop";
+  payment_mode: "cash" | "upi_to_driver";
 };
 
 // Public page for the receiver: no sign-in, just the token from the shared link.
@@ -42,7 +45,7 @@ export default function TrackView() {
           else setMissing(true);
         });
     load();
-    const poll = setInterval(load, 10000);
+    const poll = setInterval(load, 5000);
     return () => clearInterval(poll);
   }, [token]);
 
@@ -74,6 +77,11 @@ export default function TrackView() {
         {t.driver_name && (
           <p className="text-stone-600">
             Driver: {t.driver_name} · {t.vehicle_number}
+          </p>
+        )}
+        {t.pay_at === "drop" && t.status !== "delivered" && t.status !== "cancelled" && (
+          <p className="rounded-lg bg-orange-50 p-3 font-medium text-orange-900">
+            Please keep ₹{t.fare_rupees} ready for the driver ({t.payment_mode === "cash" ? "cash" : "UPI"}) when the parcel arrives.
           </p>
         )}
         {t.driver_seen_at && (

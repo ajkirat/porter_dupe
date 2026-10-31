@@ -50,6 +50,10 @@ do $$ declare j record; begin
   assert (select count(*) from public.job_secrets) = 1, 'customer cannot read own OTPs';
 end $$;
 
+-- Payment collection point defaults to the drop and only accepts pickup or drop
+do $$ begin assert (select pay_at from t_job) = 'drop', 'pay_at default'; end $$;
+select pg_temp.expect_error($$select public.create_job('a', 12.9352, 77.6245, 'b', 12.9784, 77.6408, 'R', '9', 5000, 600, p_pay_at => 'nope')$$, 'check constraint');
+
 -- Driver with no approval/pass sees nothing
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
 do $$ begin
