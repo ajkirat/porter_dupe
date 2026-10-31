@@ -151,4 +151,14 @@ do $$ begin
 end $$;
 
 reset role;
+-- Push alerts: tokens are saved per driver; only the server can ask who to alert
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
+select public.driver_save_push_token('tok_d');
+select pg_temp.expect_error($$select * from public.drivers_to_notify('00000000-0000-0000-0000-000000000001')$$, 'server only');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000c');
+select pg_temp.expect_error($$select public.driver_save_push_token('tok_c')$$, 'drivers only');
+select set_config('request.jwt.claims', '{"role":"service_role"}', false);
+do $$ begin assert (select count(*) from public.drivers_to_notify(gen_random_uuid())) = 0, 'unknown job should notify nobody'; end $$;
+select set_config('request.jwt.claims', '', false);
+
 \echo 'ALL CHECKS PASSED'
