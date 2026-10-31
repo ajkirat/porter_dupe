@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Map, { type MapMarker } from "@/components/Map";
 import { SetupNotice } from "@/components/RequireUser";
+import Logo from "@/components/Logo";
 import StatusBadge from "@/components/StatusBadge";
 import { isConfigured, supabase } from "@/lib/supabase";
 import type { JobStatus } from "@/lib/types";
@@ -56,12 +57,13 @@ export default function TrackView() {
   if (t.driver_lat && t.driver_lng) markers.push({ pos: { lat: t.driver_lat, lng: t.driver_lng }, label: "Driver", kind: "driver" });
 
   return (
-    <div className="mx-auto max-w-xl space-y-4">
+    <div className="mx-auto max-w-md space-y-4 p-4">
+      <Logo className="text-xl text-stone-900" />
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Parcel tracking</h1>
         <StatusBadge status={t.status} />
       </div>
-      <Map markers={markers} />
+      <Map markers={markers} className="h-72 rounded-xl" />
       <div className="card space-y-2 text-sm">
         <p>
           <span className="text-green-700">●</span> {t.pickup_address}

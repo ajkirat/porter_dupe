@@ -1,4 +1,4 @@
-# BikeDrop: bike parcel delivery for Bengaluru
+# Pikop: bike parcel delivery for Bengaluru
 
 A Porter-style MVP for moving parcels across one city by bike. Customers book on a map and pay the driver directly (cash or the driver's UPI). Drivers keep the whole fare and pay a flat daily or weekly pass instead of commission. The platform never touches ride money.
 
@@ -6,13 +6,14 @@ One Next.js app serves three roles:
 
 | Route | Who | What |
 |---|---|---|
-| `/book` | Customer | Pick pickup and drop (search or tap the map), see a distance-based fare, book |
-| `/orders`, `/orders/[id]` | Customer | Live status, pickup and drop OTPs, driver details, share tracking link, cancel |
+| `/` | Customer | Full-screen map: set pickup and drop (search, current location, or drop a pin), see the fare, add parcel details, book |
+| `/orders`, `/orders/[id]` | Customer | Order list; live status, pickup and drop OTPs, driver details, share tracking link, cancel |
+| `/account` | Customer | Phone number, sign out, link to drive with Pikop |
 | `/track/[token]` | Receiver | Public tracking page, no sign-in |
 | `/driver` | Driver | Sign up with KYC documents, go online, accept or reject jobs, navigate, confirm pickup and drop with OTPs |
 | `/admin` | Operator | Approve or reject KYC, record pass payments, see all trips, manually offer a job to a driver, edit fares and pass prices |
 
-It is a PWA, so drivers and customers can "Add to home screen" on Android without a Play Store listing.
+The customer side is built mobile first (bottom tab bar, bottom sheets, installable icon). It is a PWA, so customers and drivers can "Add to home screen" on Android and iPhone without a store listing. On a desktop browser it shows as a phone-sized column.
 
 ## Stack
 

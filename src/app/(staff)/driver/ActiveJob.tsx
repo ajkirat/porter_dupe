@@ -41,7 +41,7 @@ export default function ActiveJob({ job, me, onChange }: { job: Job; me: LatLng 
           { pos: target, label: atPickupLeg ? "Pickup" : "Drop", kind: atPickupLeg ? "pickup" : "drop" },
           ...(me ? [{ pos: me, label: "You", kind: "driver" as const }] : []),
         ]}
-        className="h-56"
+        className="h-56 rounded-xl"
       />
       <JobCard job={job}>
         <div className="grid grid-cols-2 gap-2 pt-2">
