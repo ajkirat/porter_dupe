@@ -65,7 +65,7 @@ export default function DriversTab({
               </span>
             </div>
             <p className="text-stone-600">
-              {d.vehicle_number} · licence {d.licence_number} {d.upi_id && `· UPI ${d.upi_id}`}
+              {d.vehicle_number} {d.licence_number && `· licence ${d.licence_number}`} {d.upi_id && `· UPI ${d.upi_id}`}
             </p>
             <div className="flex flex-wrap gap-2">
               {KYC_DOCS.map((doc) =>
