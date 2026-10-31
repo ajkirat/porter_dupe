@@ -21,6 +21,7 @@ You'll need: a GitHub login (you have one), and an email address to sign up for 
 3. Paste it into the SQL editor and click **Run**. You should see "Success. No rows returned".
 4. Click **+** for a new query, and do the same with [`supabase/migrations/0002_storage.sql`](../supabase/migrations/0002_storage.sql).
 5. Click **+** once more and do the same with [`supabase/migrations/0003_pay_at_and_tracking.sql`](../supabase/migrations/0003_pay_at_and_tracking.sql). It adds the "pay at pickup or drop" choice.
+6. Once more with [`supabase/migrations/0004_driver_app.sql`](../supabase/migrations/0004_driver_app.sql). It adds "driver arrived" and dropping a job, used by the driver app.
 
 Check: **Table Editor** in the sidebar now lists `drivers`, `jobs`, `profiles`, `settings` and a few more.
 
@@ -85,7 +86,7 @@ Use two browser windows: your normal one is the **customer/admin** (`9000000001`
 
 **Driver signs up** (incognito window)
 
-1. Open your URL → **Drive**. Sign in with `9000000002` / `123456`.
+1. Open the **Pikop Driver** site (see "Deploy the driver app" below) in the incognito window. Sign in with `9000000002` / `123456`.
 2. Fill the form with any test details and add any four photos for the documents. **Submit for approval**. You'll see "We're checking your documents".
 
 **Admin approves** (normal window)
@@ -94,7 +95,7 @@ Use two browser windows: your normal one is the **customer/admin** (`9000000001`
 
 **Driver goes online** (incognito)
 
-4. Refresh **Drive**. Tap **Go online** and allow location.
+4. On the driver site, flip the **online switch** and allow location.
 
 **Customer books** (normal window)
 
@@ -103,10 +104,14 @@ Use two browser windows: your normal one is the **customer/admin** (`9000000001`
 
 **Driver delivers** (incognito)
 
-7. The job appears under "Jobs near you" (it refreshes by itself within 20 seconds). If it doesn't, your browser location is probably more than 6 km from the pickup. Use **Admin → Trips → Offer to driver** instead.
-8. **Accept** → enter the pickup OTP → **Confirm pickup** → enter the drop OTP → **Confirm delivery**.
+7. A **New request** popup appears with a 30 second countdown (it can take up to 15 seconds). If it doesn't, your browser location is probably more than 6 km from the pickup. Use **Admin → Trips → Offer to driver** instead.
+8. **Accept** → **I've arrived** → enter the pickup OTP → **Confirm pickup** → enter the drop OTP → **Confirm delivery**.
 
 **Check**: the customer's order page now says **Delivered**. 🎉
+
+## Deploy the driver app
+
+The driver app is its own repo, <https://github.com/ajkirat/porter_dupe_driver>. Create a second Netlify site from it with the same Supabase variables, plus `NEXT_PUBLIC_OPERATOR_UPI` and `NEXT_PUBLIC_SUPPORT_PHONE`. On the customer site, set `NEXT_PUBLIC_DRIVER_APP_URL` to the driver site's URL to show a link in the Account tab.
 
 ## Step 8 (optional). Run it on your laptop
 

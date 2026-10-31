@@ -1,6 +1,6 @@
 import { APP_NAME } from "@/lib/brand";
 
-export default function Logo({ className = "" }: { className?: string }) {
+export default function Logo({ className = "", suffix }: { className?: string; suffix?: string }) {
   return (
     <span className={`inline-flex items-center gap-2 font-extrabold tracking-tight ${className}`}>
       <svg viewBox="0 0 512 512" className="h-[1.1em] w-[1.1em]" aria-hidden>
@@ -9,6 +9,7 @@ export default function Logo({ className = "" }: { className?: string }) {
         <circle cx="256" cy="218" r="46" fill="#ea580c" />
       </svg>
       {APP_NAME}
+      {suffix && <span className="font-medium text-stone-500">{suffix}</span>}
     </span>
   );
 }

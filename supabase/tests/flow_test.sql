@@ -94,6 +94,25 @@ do $$ begin
 end $$;
 select public.accept_job((select id from t_job));
 
+-- Sender's phone is filled in for the driver; arrival is recorded; a driver can drop the job and take it again
+do $$ declare j record; begin
+  select * into j from public.jobs;
+  assert j.pickup_contact_phone = '+919000000002', format('pickup phone %s', j.pickup_contact_phone);
+end $$;
+select public.mark_arrived((select id from t_job));
+do $$ begin assert (select driver_arrived_at from public.jobs) is not null, 'arrival not recorded'; end $$;
+select public.driver_cancel_job((select id from t_job), 'bike broke down');
+do $$ begin
+  assert (select status from public.jobs where id = (select id from t_job)) = 'requested', 'cancel did not release job';
+  assert (select driver_arrived_at from public.jobs where id = (select id from t_job)) is null, 'arrival not cleared';
+  assert (select count(*) from public.driver_open_jobs(12.936, 77.625)) = 0, 'dropped job re-offered to same driver';
+end $$;
+select pg_temp.expect_error(format('select public.mark_arrived(%L)', (select id from t_job)), 'not waiting for pickup');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select public.admin_assign_job((select id from t_job), '00000000-0000-0000-0000-00000000000d');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
+select public.accept_job((select id from t_job));
+
 -- Second driver can't steal it
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000e');
 select pg_temp.expect_error(format('select public.accept_job(%L)', (select id from t_job)), 'no longer available');

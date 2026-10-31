@@ -7,6 +7,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: `${APP_NAME}: ${TAGLINE}`,
   description: "Book a bike to move a parcel across Bengaluru. Pay the driver directly.",
+  manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: "default" },
 };
 

@@ -64,6 +64,7 @@ export type Job = {
   created_at: string;
   assigned_at: string | null;
   accepted_at: string | null;
+  driver_arrived_at: string | null;
   picked_up_at: string | null;
   delivered_at: string | null;
   cancelled_at: string | null;

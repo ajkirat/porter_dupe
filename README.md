@@ -10,7 +10,6 @@ One Next.js app serves three roles:
 | `/orders`, `/orders/[id]` | Customer | Order list; live status, pickup and drop OTPs, driver details, share tracking link, cancel |
 | `/account` | Customer | Phone number, sign out, link to drive with Pikop |
 | `/track/[token]` | Receiver | Public tracking page, no sign-in |
-| `/driver` | Driver | Sign up with KYC documents, go online, accept or reject jobs, navigate, confirm pickup and drop with OTPs |
 | `/admin` | Operator | Approve or reject KYC, record pass payments, see all trips, manually offer a job to a driver, edit fares and pass prices |
 
 The customer side is built mobile first (bottom tab bar, bottom sheets, installable icon). It is a PWA, so customers and drivers can "Add to home screen" on Android and iPhone without a store listing. On a desktop browser it shows as a phone-sized column.
@@ -85,3 +84,7 @@ These were assumed and are easy to change:
 - **Area**: all of Bengaluru. Narrow it by tightening the search viewbox in `src/lib/geo.ts` and adding a service-area check in `create_job`.
 - **Vehicles**: bike only. `vehicle_type` already exists on drivers and jobs for adding scooters with boxes or 3-wheelers.
 - **KYC documents**: driving licence, RC, Aadhaar front and a photo (`KYC_DOCS` in `src/lib/types.ts`).
+
+## Driver app
+
+Drivers use a separate app, **Pikop Driver**, in its own repo: <https://github.com/ajkirat/porter_dupe_driver>. It shares this Supabase project, so the database migrations for both apps live here. Set `NEXT_PUBLIC_DRIVER_APP_URL` to show a "Drive with Pikop" link in the customer Account tab.

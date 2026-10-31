@@ -151,7 +151,7 @@ export default function OrderView() {
       <Sheet onHeight={setSheetH}>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold">{HEADLINE[job.status]}</h1>
+            <h1 className="text-xl font-bold">{job.status === "accepted" && job.driver_arrived_at ? "Driver has arrived at pickup" : HEADLINE[job.status]}</h1>
             {job.status === "requested" && <p className="mt-0.5 text-sm text-stone-500">This can take a few minutes. We&apos;ll update this screen.</p>}
           </div>
           <p className="text-xl font-bold">₹{job.fare_rupees}</p>
