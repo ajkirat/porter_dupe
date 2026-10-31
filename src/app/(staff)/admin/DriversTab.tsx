@@ -79,6 +79,16 @@ export default function DriversTab({
                   </span>
                 ),
               )}
+              {d.kyc_docs.selfie && (
+                <button className="btn py-1 text-xs" onClick={() => openDoc(d.kyc_docs.selfie)}>
+                  Signup selfie
+                </button>
+              )}
+              {d.last_selfie_path && (
+                <button className="btn py-1 text-xs" onClick={() => openDoc(d.last_selfie_path!)}>
+                  Last online selfie{d.last_selfie_at && ` (${new Date(d.last_selfie_at).toLocaleString("en-IN")})`}
+                </button>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-2 border-t border-stone-100 pt-2">
               {d.kyc_status !== "approved" && (

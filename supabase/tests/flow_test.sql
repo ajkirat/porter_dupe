@@ -85,7 +85,10 @@ end $$;
 
 -- Driver D goes online, finds and accepts it
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
-select public.driver_set_online(true);
+select pg_temp.expect_error($$select public.driver_set_online(true)$$, 'selfie is required');
+select pg_temp.expect_error($$select public.driver_set_online(true, '00000000-0000-0000-0000-00000000000e/x.jpg')$$, 'selfie is required');
+select public.driver_set_online(true, '00000000-0000-0000-0000-00000000000d/selfie-1.jpg');
+do $$ begin assert (select last_selfie_path from public.drivers) like '%selfie-1.jpg', 'selfie not recorded'; end $$;
 select public.driver_set_location(12.936, 77.625);
 do $$ begin
   assert (select count(*) from public.driver_open_jobs(12.936, 77.625)) = 1, 'open job not visible nearby';

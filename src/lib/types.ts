@@ -20,6 +20,8 @@ export type Driver = {
   kyc_status: KycStatus;
   kyc_note: string | null;
   is_online: boolean;
+  last_selfie_path: string | null;
+  last_selfie_at: string | null;
   last_lat: number | null;
   last_lng: number | null;
   last_seen_at: string | null;
