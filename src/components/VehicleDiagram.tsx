@@ -20,7 +20,13 @@ const BODY: Record<string, { cab: number; cabH: number; floor: number; r: number
 const BIKE = { r: 30, wheelbase: 135, rack: 78 };
 // A photo of a real motorcycle (transparent PNG, 3/4 view). cm = how long the bike looks in the picture, rackX = where the rear carrier sits.
 const BIKE_PHOTO = { src: "/vehicles/bike.webp", cm: 175, aspect: 536 / 682, rackX: 0.11 };
-const REF = { len: 244 + 140 + 6, h: 175, w: 160 }; // the biggest standard vehicle sets the shared scale
+// Product photos (transparent, 3/4 view). pxPerCm is measured on the cab height so every photo vehicle shares the diagram scale;
+// bed = where the load area sits in the photo (px). The overlay and the Length/Height lines are placed on it by hand, so they are
+// illustrative: the top view below is the to-scale one.
+const PHOTOS: Record<string, { src: string; w: number; h: number; ground: number; pxPerCm: number; bed: { x0: number; x1: number; top: number; floor: number } }> = {
+  tata_ace: { src: "/vehicles/tata-ace.webp", w: 500, h: 318, ground: 283, pxPerCm: 221 / 185, bed: { x0: 42, x1: 215, top: 55, floor: 212 } },
+};
+const REF = { len: 244 + 140 + 6, h: 240, w: 160 }; // the biggest standard vehicle sets the shared scale
 
 // Side view and top view of the vehicle, both drawn to one shared scale from the real load-area size, with each side labelled.
 export default function VehicleDiagram({ v, code = "tata_ace", className = "" }: { v: Dims; code?: string; className?: string }) {
@@ -30,9 +36,10 @@ export default function VehicleDiagram({ v, code = "tata_ace", className = "" }:
   const floor = bike ? BIKE.rack : b.floor;
   const ahead = bike ? BIKE_PHOTO.cm * (1 - BIKE_PHOTO.rackX) - L / 2 : b.cab; // how far the vehicle reaches in front of the load area
   const totalL = L + ahead;
-  const topZ = Math.max(floor + H, bike ? 118 : b.cabH);
+  const photo = PHOTOS[code];
+  const topZ = Math.max(floor + H, bike ? 118 : b.cabH, photo ? photo.ground / photo.pxPerCm : 0);
 
-  const area = (len: number, h: number, w: number) => ({ w: 330 / len, h: 230 / (h + w + 70) });
+  const area = (len: number, h: number, w: number) => ({ w: 330 / len, h: 250 / (h + w + 70) });
   const kRef = Math.min(area(REF.len, REF.h, REF.w).w, area(REF.len, REF.h, REF.w).h);
   const kFit = Math.min(area(totalL, topZ, W).w, area(totalL, topZ, W).h);
   const k = Math.min(kRef, kFit);
@@ -82,8 +89,26 @@ export default function VehicleDiagram({ v, code = "tata_ace", className = "" }:
     </g>
   );
 
+  // Where the Length and Height lines go: on the data load area, or on the photo's bed.
+  let lenLine = { x1: sx(0), x2: sx(L), y: sz(floor + H) - 14 };
+  let hgtLine = { x: sx(0) - 14, y1: sz(floor), y2: sz(floor + H) };
+
   let body: React.ReactNode;
-  if (bike) {
+  if (photo) {
+    const sc = k / photo.pxPerCm; // screen px per photo px
+    const left = sx(0) - photo.bed.x0 * sc;
+    const top = G - photo.ground * sc;
+    const pp = (x: number, y: number) => `${(left + x * sc).toFixed(1)},${(top + y * sc).toFixed(1)}`;
+    const { x0, x1, top: bt, floor: bf } = photo.bed;
+    lenLine = { x1: left + x0 * sc, x2: left + x1 * sc, y: top - 2 };
+    hgtLine = { x: left + x0 * sc - 14, y1: top + bt * sc, y2: top + bf * sc };
+    body = (
+      <g>
+        <image href={photo.src} x={left} y={top} width={photo.w * sc} height={photo.h * sc} />
+        <polygon points={[pp(x0, bt), pp(x1, bt - 3), pp(x1, bf - 2), pp(x0, bf + 3)].join(" ")} fill="rgba(251,146,60,0.28)" stroke={ACCENT} strokeWidth={1.2} />
+      </g>
+    );
+  } else if (bike) {
     const w = BIKE_PHOTO.cm * k;
     const left = sx(L / 2) - BIKE_PHOTO.rackX * w;
     body = (
@@ -123,12 +148,12 @@ export default function VehicleDiagram({ v, code = "tata_ace", className = "" }:
 
   const [lx0, lx1] = [sx(0), sx(L)];
   return (
-    <svg viewBox={`0 0 420 ${Math.ceil(H_VIEW)}`} className={`w-full ${className}`} role="img" aria-label={`Load area ${ft(L)} long, ${ft(W)} wide, ${ft(H)} high (${sizeCm(v)})`}>
+    <svg viewBox={`0 0 460 ${Math.ceil(H_VIEW)}`} className={`w-full ${className}`} role="img" aria-label={`Load area ${ft(L)} long, ${ft(W)} wide, ${ft(H)} high (${sizeCm(v)})`}>
       {/* ground */}
       <line x1={20} y1={G} x2={400} y2={G} stroke="#a8a29e" strokeWidth={1} />
       {body}
-      {hDim(lx0, lx1, sz(floor + H) - 14, `Length ${ft(L)} · ${L} cm`, "len")}
-      {vDim(lx0 - 14, sz(floor), sz(floor + H), `Height ${ft(H)} · ${H} cm`, "left", "hgt")}
+      {hDim(lenLine.x1, lenLine.x2, lenLine.y, `Length ${ft(L)} · ${L} cm`, "len")}
+      {vDim(hgtLine.x, hgtLine.y1, hgtLine.y2, `Height ${ft(H)} · ${H} cm`, "left", "hgt")}
 
       {/* top view of the load area, same scale */}
       <text x={lx0} y={topY - 8} fontSize={10} fill="#78716c">
