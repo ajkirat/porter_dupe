@@ -18,6 +18,8 @@ const BODY: Record<string, { cab: number; cabH: number; floor: number; r: number
 };
 // A motorcycle with a delivery box on the rear carrier: wheel radius, wheelbase, carrier height.
 const BIKE = { r: 30, wheelbase: 135, rack: 78 };
+// A photo of a real motorcycle (transparent PNG, 3/4 view). cm = how long the bike looks in the picture, rackX = where the rear carrier sits.
+const BIKE_PHOTO = { src: "/vehicles/bike.webp", cm: 175, aspect: 536 / 682, rackX: 0.11 };
 const REF = { len: 244 + 140 + 6, h: 175, w: 160 }; // the biggest standard vehicle sets the shared scale
 
 // Side view and top view of the vehicle, both drawn to one shared scale from the real load-area size, with each side labelled.
@@ -26,7 +28,7 @@ export default function VehicleDiagram({ v, code = "tata_ace", className = "" }:
   const bike = code === "bike";
   const b = BODY[code] ?? BODY.tata_ace;
   const floor = bike ? BIKE.rack : b.floor;
-  const ahead = bike ? BIKE.wheelbase - L / 2 + BIKE.r + 12 : b.cab; // how far the vehicle reaches in front of the load area
+  const ahead = bike ? BIKE_PHOTO.cm * (1 - BIKE_PHOTO.rackX) - L / 2 : b.cab; // how far the vehicle reaches in front of the load area
   const totalL = L + ahead;
   const topZ = Math.max(floor + H, bike ? 118 : b.cabH);
 
@@ -51,10 +53,6 @@ export default function VehicleDiagram({ v, code = "tata_ace", className = "" }:
       <circle cx={sx(xc)} cy={sz(r)} r={r * k * 0.15} fill={WHEEL} />
     </g>
   );
-  const seg = (x1: number, z1: number, x2: number, z2: number, w: number, key: string, color = INK) => (
-    <line key={key} x1={sx(x1)} y1={sz(z1)} x2={sx(x2)} y2={sz(z2)} stroke={color} strokeWidth={w} strokeLinecap="round" />
-  );
-
   // Dimension line with end ticks and a label.
   const hDim = (x1: number, x2: number, y: number, label: string, key: string) => (
     <g key={key}>
@@ -86,21 +84,11 @@ export default function VehicleDiagram({ v, code = "tata_ace", className = "" }:
 
   let body: React.ReactNode;
   if (bike) {
-    const rear = L / 2 + 6;
-    const front = rear + BIKE.wheelbase;
+    const w = BIKE_PHOTO.cm * k;
+    const left = sx(L / 2) - BIKE_PHOTO.rackX * w;
     body = (
       <g>
-        {seg(rear, 30, rear + 48, 40, 5, "swing")}
-        <polygon points={pts([[rear + 38, 24], [rear + 85, 24], [rear + 85, 64], [rear + 38, 64]])} fill="#78716c" stroke={INK} strokeWidth={1} />
-        <polygon points={pts([[rear + 25, 24], [rear + 80, 28], [rear + 80, 33], [rear + 25, 29]])} fill="#a8a29e" stroke={INK} strokeWidth={1} />
-        {seg(front, 30, front - 14, 96, 5, "fork")}
-        {seg(front - 14, 96, front - 28, 106, 4, "bar1")}
-        <polygon points={pts([[rear + 18, 74], [rear + 66, 74], [rear + 72, 68], [rear + 16, 68]])} fill={WHEEL} />
-        <polygon points={pts([[rear + 66, 66], [rear + 68, 80], [rear + 100, 82], [rear + 112, 72], [rear + 108, 62], [rear + 70, 62]])} fill="#dc2626" stroke={INK} strokeWidth={1} />
-        <circle cx={sx(front - 10)} cy={sz(84)} r={7 * k + 1} fill="#fde047" stroke={INK} strokeWidth={1} />
-        {seg(0, floor - 2, rear + 22, floor - 2, 4, "rack")}
-        {wheel(rear, BIKE.r, "wr")}
-        {wheel(front, BIKE.r, "wf")}
+        <image href={BIKE_PHOTO.src} x={left} y={G - w * BIKE_PHOTO.aspect + w * 0.03} width={w} height={w * BIKE_PHOTO.aspect} />
         {loadArea}
       </g>
     );
