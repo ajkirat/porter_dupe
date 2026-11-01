@@ -8,6 +8,7 @@ import Map, { type MapFocus, type MapMarker } from "@/components/Map";
 import PlaceSearch from "@/components/PlaceSearch";
 import Sheet from "@/components/Sheet";
 import { useUser } from "@/components/UserContext";
+import VehicleDiagram from "@/components/VehicleDiagram";
 import { BIKE_ONLY, capacity, sizeCm, sizeFeet, type VehicleType } from "@/lib/vehicles";
 import { computeFare, DEFAULT_FARE, formatKm, formatMinutes, type FareSettings } from "@/lib/fare";
 import { BENGALURU, getRoute, reverseGeocode, type LatLng, type Place, type Route } from "@/lib/geo";
@@ -318,7 +319,7 @@ export default function HomePage() {
                       key={v.code}
                       type="button"
                       onClick={() => setVehicleCode(v.code)}
-                      className={`flex w-full items-center gap-3 rounded-2xl border-2 p-3 text-left ${on ? "border-brand bg-orange-50" : "border-stone-200"}`}
+                      className={`flex w-full flex-wrap items-center gap-3 rounded-2xl border-2 p-3 text-left ${on ? "border-brand bg-orange-50" : "border-stone-200"}`}
                     >
                       <Icon className={`h-9 w-9 shrink-0 ${on ? "text-brand" : "text-stone-500"}`} />
                       <div className="min-w-0 flex-1">
@@ -328,6 +329,11 @@ export default function HomePage() {
                         {on && v.description && <p className="mt-0.5 text-xs text-stone-600">{v.description}</p>}
                       </div>
                       <p className="text-xl font-bold">₹{computeFare(route.distanceM, rates(v))}</p>
+                      {on && (
+                        <div className="basis-full">
+                          <VehicleDiagram v={v} />
+                        </div>
+                      )}
                     </button>
                   );
                 })}
