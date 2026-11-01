@@ -28,6 +28,7 @@ You'll need: a GitHub login (you have one), and an email address to sign up for 
 10. Once more with [`supabase/migrations/0008_saved_routes.sql`](../supabase/migrations/0008_saved_routes.sql). This adds saved routes (Account → Saved routes, and a quick list on the booking screen).
 11. Once more with [`supabase/migrations/0009_driver_codes.sql`](../supabase/migrations/0009_driver_codes.sql). This gives every driver a short ID (PK1001 …) and adds Admin → Bulk credit.
 12. Once more with [`supabase/migrations/0010_autorenew_expiry.sql`](../supabase/migrations/0010_autorenew_expiry.sql). Passes can auto-renew from the wallet, and wallet credit can be set to expire (Admin → Referrals → Rules).
+13. Once more with [`supabase/migrations/0011_pay_anytime.sql`](../supabase/migrations/0011_pay_anytime.sql). Customers pay the driver by cash, UPI or QR any time before delivery; no payment choice at booking.
 
 Check: **Table Editor** in the sidebar now lists `drivers`, `jobs`, `profiles`, `settings` and a few more.
 

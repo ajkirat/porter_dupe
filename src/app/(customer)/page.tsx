@@ -39,8 +39,6 @@ export default function HomePage() {
     receiver_phone: "",
     pickup_contact_name: "",
     pickup_contact_phone: "",
-    payment_mode: "cash",
-    pay_at: "drop",
   });
   const [saved, setSaved] = useState<SavedRoute[]>([]);
   const [saveRoute, setSaveRoute] = useState(false);
@@ -177,8 +175,6 @@ export default function HomePage() {
       p_item_note: form.item_note.trim() || null,
       p_pickup_contact_name: form.pickup_contact_name.trim() || null,
       p_pickup_contact_phone: form.pickup_contact_phone ? toE164(form.pickup_contact_phone) : null,
-      p_payment_mode: form.payment_mode,
-      p_pay_at: form.pay_at,
       ...(discount > 0 ? { p_use_wallet: true } : {}),
     });
     setBusy(false);
@@ -353,44 +349,7 @@ export default function HomePage() {
               </div>
               <ContactButton onPick={(c) => setForm((f) => ({ ...f, pickup_contact_name: c.name || f.pickup_contact_name, pickup_contact_phone: c.phone }))} />
             </details>
-            <div>
-              <p className="label">Who pays the driver?</p>
-              <div className="mt-1 grid grid-cols-2 gap-2">
-                {[
-                  { v: "pickup", l: "Pay at pickup", d: "Sender pays" },
-                  { v: "drop", l: "Pay at drop", d: "Receiver pays" },
-                ].map((o) => (
-                  <button
-                    type="button"
-                    key={o.v}
-                    onClick={() => setForm({ ...form, pay_at: o.v })}
-                    className={`rounded-xl border-2 px-3 py-2.5 text-left ${form.pay_at === o.v ? "border-brand bg-orange-50" : "border-stone-200"}`}
-                  >
-                    <span className={`block text-sm font-medium ${form.pay_at === o.v ? "text-brand" : ""}`}>{o.l}</span>
-                    <span className="block text-xs text-stone-500">{o.d}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="label">Pay the driver by</p>
-              <div className="mt-1 grid grid-cols-2 gap-2">
-                {[
-                  { v: "cash", l: "Cash" },
-                  { v: "upi_to_driver", l: "UPI" },
-                ].map((o) => (
-                  <button
-                    type="button"
-                    key={o.v}
-                    onClick={() => setForm({ ...form, payment_mode: o.v })}
-                    className={`rounded-xl border-2 py-2.5 text-sm font-medium ${form.payment_mode === o.v ? "border-brand bg-orange-50 text-brand" : "border-stone-200"}`}
-                  >
-                    {o.l}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-1 text-xs text-stone-500">You pay the driver directly, {form.pay_at === "pickup" ? "when they collect the parcel" : "when the parcel is delivered"}. Pikop never handles the money.{discount > 0 && ` Your wallet credit lowers what you pay the driver to ₹${(fare ?? 0) - discount}.`}</p>
-            </div>
+            <p className="text-xs text-stone-500">You pay the driver directly, by cash, UPI or QR, any time after booking until delivery. Pikop never handles the money.{discount > 0 && ` Your wallet credit lowers what you pay the driver to ₹${(fare ?? 0) - discount}.`}</p>
             <label className="flex items-center gap-2 text-sm text-stone-700">
               <input type="checkbox" className="h-4 w-4" checked={saveRoute} onChange={(e) => setSaveRoute(e.target.checked)} />
               Save this route for next time

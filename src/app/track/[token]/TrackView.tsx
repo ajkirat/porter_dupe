@@ -80,9 +80,9 @@ export default function TrackView() {
             Driver: {t.driver_name} · {t.vehicle_number}
           </p>
         )}
-        {t.pay_at === "drop" && t.status !== "delivered" && t.status !== "cancelled" && (
+        {t.status !== "delivered" && t.status !== "cancelled" && (
           <p className="rounded-lg bg-orange-50 p-3 font-medium text-orange-900">
-            Please keep ₹{t.fare_rupees - (t.wallet_discount ?? 0)} ready for the driver ({t.payment_mode === "cash" ? "cash" : "UPI"}) when the parcel arrives.
+            Please keep ₹{t.fare_rupees - (t.wallet_discount ?? 0)} ready for the driver (cash, UPI or QR) when the parcel arrives.
           </p>
         )}
         {t.driver_seen_at && (

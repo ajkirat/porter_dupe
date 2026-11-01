@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { errorText, supabase } from "@/lib/supabase";
+import { upiLink, validVpa } from "@/lib/upi";
 import { KYC_DOCS, type Driver, type DriverPass, type KycStatus } from "@/lib/types";
 
 // KYC review and pass management.
@@ -59,6 +60,14 @@ export default function DriversTab({
     const { error } = await supabase().rpc("admin_adjust_wallet", { p_user: d.id, p_wallet: "driver", p_amount: amount, p_note: note });
     if (error) setError(errorText(error));
     else alert(`Done. Wallet is now ₹${(typeof bal === "number" ? bal : 0) + amount}.`);
+  }
+
+  // One-tap payout: opens the admin's UPI app with the driver's ID and amount filled in. Check the payee name it shows.
+  function payUpi(d: Driver) {
+    if (!validVpa(d.upi_id)) return alert(`${d.full_name} has no valid UPI ID on file.`);
+    const rupees = Math.trunc(Number(prompt(`Pay ${d.full_name} (${d.upi_id}) how many ₹?`, "100")));
+    if (!rupees || rupees < 1) return;
+    window.location.href = upiLink({ vpa: d.upi_id, name: d.full_name, rupees, note: `Pikop ${d.driver_code ?? ""}`.trim() });
   }
 
   return (
@@ -137,6 +146,11 @@ export default function DriversTab({
                   <button className="btn py-1.5" onClick={() => adjustWallet(d)}>
                     ± Wallet
                   </button>
+                  {validVpa(d.upi_id) && (
+                    <button className="btn py-1.5" onClick={() => payUpi(d)}>
+                      Pay by UPI
+                    </button>
+                  )}
                 </>
               )}
             </div>

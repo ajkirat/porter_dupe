@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BackIcon, CheckIcon, PhoneIcon, ShareIcon } from "@/components/icons";
+import PayCard from "@/components/PayCard";
 import Map, { type MapMarker } from "@/components/Map";
 import Sheet from "@/components/Sheet";
 import { formatKm, formatMinutes } from "@/lib/fare";
 import { getRoute } from "@/lib/geo";
 import { errorText, supabase } from "@/lib/supabase";
-import { PAY_AT_LABEL, type Driver, type Job, type JobStatus } from "@/lib/types";
+import { type Driver, type Job, type JobStatus } from "@/lib/types";
 
 type Secrets = { pickup_otp: string; drop_otp: string };
 
@@ -188,7 +189,7 @@ export default function OrderView() {
           <div className="mt-4 flex items-center gap-3 rounded-2xl bg-green-50 p-4 text-green-800">
             <CheckIcon className="h-8 w-8" />
             <p className="text-sm">
-              Delivered. ₹{job.fare_rupees - (job.wallet_discount ?? 0)} is paid to the driver {PAY_AT_LABEL[job.pay_at]} by {job.payment_mode === "cash" ? "cash" : "UPI"}. If that hasn&apos;t happened yet, please settle it with the driver now.
+              Delivered. Please make sure the driver has been paid ₹{job.fare_rupees - (job.wallet_discount ?? 0)} if you have not done so yet.
             </p>
           </div>
         )}
@@ -217,6 +218,8 @@ export default function OrderView() {
           </div>
         )}
 
+        {active && <PayCard job={job} driver={driver} onChange={load} />}
+
         <div className="mt-4 space-y-1.5 text-sm">
           <p>
             <span className="mr-2 text-green-600">●</span>
@@ -227,7 +230,7 @@ export default function OrderView() {
             {job.drop_address}
           </p>
           <p className="pt-1 text-xs text-stone-500">
-            {formatKm(job.distance_m)} · ₹{job.fare_rupees - (job.wallet_discount ?? 0)} to the driver {PAY_AT_LABEL[job.pay_at]} by {job.payment_mode === "cash" ? "cash" : "UPI"} · receiver {job.receiver_name}
+            {formatKm(job.distance_m)} · ₹{job.fare_rupees - (job.wallet_discount ?? 0)} to the driver · receiver {job.receiver_name}
           </p>
         </div>
 

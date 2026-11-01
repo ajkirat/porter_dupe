@@ -193,12 +193,12 @@ set role authenticated;
 
 -- F's first delivered trip pays D 50.
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000c');
-create temp table t_j4 as
+create temp table t_jpay as
   select * from public.create_job('Koramangala', 12.9352, 77.6245, 'Indiranagar', 12.9784, 77.6408, 'Meera', '+919000000009', 5000, 900);
-grant select on t_j4 to authenticated;
+grant select on t_jpay to authenticated;
 reset role;
 -- a one-off short hop would not count, but this is a 5 km trip
-select pg_temp.run_trip((select id from t_j4), '00000000-0000-0000-0000-0000000000a4');
+select pg_temp.run_trip((select id from t_jpay), '00000000-0000-0000-0000-0000000000a4');
 set role authenticated;
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
 do $$ begin
@@ -323,5 +323,22 @@ select pg_temp.expect_error($$select public.admin_adjust_wallet('00000000-0000-0
 reset role;
 update public.settings set wallet_expiry_days = 0;
 set role authenticated;
+
+-- Pay anytime: customer notes how they paid; others cannot; closed orders reject it; earnings unaffected.
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a6');
+create temp table t_jpayx as
+  select * from public.create_job('Koramangala', 12.9352, 77.6245, 'Indiranagar', 12.9784, 77.6408, 'Meera', '+919000000009', 5000, 900);
+grant select on t_jpayx to authenticated;
+select public.customer_mark_paid((select id from t_jpayx), 'upi');
+do $$ begin assert (select paid_via from public.jobs where id = (select id from t_jpayx)) = 'upi', 'paid_via not saved'; end $$;
+select pg_temp.expect_error($$select public.customer_mark_paid((select id from t_jpayx), 'bitcoin')$$, 'unknown payment method');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
+select pg_temp.expect_error($$select public.customer_mark_paid((select id from t_jpayx), 'cash')$$, 'cannot be marked');
+reset role;
+select pg_temp.run_trip((select id from t_jpayx), '00000000-0000-0000-0000-0000000000a5');
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a6');
+select pg_temp.expect_error($$select public.customer_mark_paid((select id from t_jpayx), 'cash')$$, 'cannot be marked');
+do $$ begin assert (select status from public.jobs where id = (select id from t_jpayx)) = 'delivered', 'trip completes regardless of payment note'; end $$;
 
 \echo 'REFERRAL CHECKS PASSED'
