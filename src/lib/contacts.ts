@@ -1,5 +1,9 @@
-// Phone contact picker. Browsers only offer it on Android Chrome (and Android apps built on it); elsewhere the
-// button stays hidden and the person types the number as before.
+import { Capacitor } from "@capacitor/core";
+import { Contacts } from "@capacitor-community/contacts";
+
+// Phone contact picker. In the Android and iPhone apps it uses the native picker. In a browser only Android Chrome
+// has one; elsewhere the person types the number as before.
+const native = () => typeof window !== "undefined" && Capacitor.isNativePlatform();
 type ContactsApi = { select: (props: string[], opts?: { multiple?: boolean }) => Promise<{ name?: string[]; tel?: string[] }[]> };
 
 function api(): ContactsApi | null {
@@ -7,13 +11,25 @@ function api(): ContactsApi | null {
   return (navigator as unknown as { contacts: ContactsApi }).contacts;
 }
 
-export const contactsSupported = () => api() !== null;
+export const contactsSupported = () => native() || api() !== null;
 
 // The last 10 digits, which drops +91 and a leading 0.
 export const tenDigits = (tel: string) => tel.replace(/\D/g, "").slice(-10);
 
 // Returns null if the person closes the picker or the contact has no number.
 export async function pickContact(): Promise<{ name: string; phone: string } | null> {
+  if (native()) {
+    try {
+      const perm = await Contacts.requestPermissions();
+      if (perm.contacts !== "granted") return null;
+      const { contact } = await Contacts.pickContact({ projection: { name: true, phones: true } });
+      const tel = contact.phones?.find((p) => p.isPrimary)?.number ?? contact.phones?.[0]?.number;
+      if (!tel) return null;
+      return { name: contact.name?.display ?? "", phone: tenDigits(tel) };
+    } catch {
+      return null;
+    }
+  }
   const c = api();
   if (!c) return null;
   try {

@@ -1,6 +1,8 @@
 "use client";
 
 import { useUser } from "@/components/UserContext";
+import DeleteAccount from "@/components/DeleteAccount";
+import Link from "next/link";
 import SavedRoutes from "@/components/SavedRoutes";
 import WalletCard from "@/components/WalletCard";
 import { APP_NAME } from "@/lib/brand";
@@ -34,6 +36,10 @@ export default function AccountPage() {
       <button className="btn w-full py-3" onClick={() => supabase().auth.signOut()}>
         Sign out
       </button>
+      <DeleteAccount />
+      <p className="text-center text-xs text-stone-400">
+        <Link href="/terms" className="underline">Terms</Link> · <Link href="/privacy" className="underline">Privacy policy</Link>
+      </p>
     </div>
   );
 }

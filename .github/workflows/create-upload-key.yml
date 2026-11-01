@@ -1,0 +1,30 @@
+name: Create Android upload key (run once)
+
+# Run this once from the Actions tab. It makes the key that signs your Play Store uploads and gives it to you as a
+# download. You then save it as two repository secrets and keep a private copy. See docs/PLAY_STORE.md.
+on:
+  workflow_dispatch:
+
+jobs:
+  key:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Generate key
+        run: |
+          PASS=$(openssl rand -hex 16)
+          keytool -genkeypair -v -keystore upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "$PASS" -keypass "$PASS" -dname "CN=Pikop Customer, O=Pikop, C=IN"
+          base64 -w0 upload.jks > keystore.b64
+          echo "$PASS" > password.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pikop-upload-key-SECRET
+          path: |
+            upload.jks
+            keystore.b64
+            password.txt
+          retention-days: 1

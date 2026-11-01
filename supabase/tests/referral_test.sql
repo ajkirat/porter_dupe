@@ -340,4 +340,25 @@ select pg_temp.expect_error($$select public.customer_mark_paid((select id from t
 select public.customer_mark_paid((select id from t_jpayx), 'upi');
 do $$ begin assert (select paid_via from public.jobs where id = (select id from t_jpayx)) = 'upi', 'paid_via not saved'; end $$;
 
+-- Account deletion: blocked with an open trip; otherwise blanks the person, keeps the trip, disables the login.
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a2');
+create temp table t_jdel as
+  select * from public.create_job('Koramangala', 12.9352, 77.6245, 'Indiranagar', 12.9784, 77.6408, 'Meera', '+919000000009', 5000, 900);
+grant select on t_jdel to authenticated;
+select pg_temp.expect_error($$select public.delete_my_account()$$, 'open trip');
+select public.cancel_job((select id from t_jdel));
+select public.delete_my_account();
+reset role;
+do $$ begin
+  assert (select full_name from public.profiles where id = '00000000-0000-0000-0000-0000000000a2') = 'Deleted user', 'profile not blanked';
+  assert (select banned_until from auth.users where id = '00000000-0000-0000-0000-0000000000a2') is not null, 'login not disabled';
+  assert exists (select 1 from public.jobs where id = (select id from t_jdel)), 'trip history must stay';
+end $$;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a5');
+select public.delete_my_account();
+reset role;
+do $$ begin assert (select full_name from public.drivers where id = '00000000-0000-0000-0000-0000000000a5') = 'Deleted driver', 'driver not blanked'; end $$;
+set role authenticated;
+
 \echo 'REFERRAL CHECKS PASSED'

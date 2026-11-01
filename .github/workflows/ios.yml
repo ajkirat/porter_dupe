@@ -1,0 +1,69 @@
+name: Build iOS
+
+# Compiles the iPhone app on every push so breakage shows up early. With the signing secrets set (see docs/APP_STORES.md)
+# it also makes a signed build and uploads it to TestFlight.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    env:
+      HAS_SIGNING: ${{ secrets.IOS_CERT_P12_BASE64 != '' && secrets.IOS_PROFILE_BASE64 != '' && secrets.APPSTORE_KEY_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx cap sync ios
+        env:
+          CUSTOMER_APP_URL: ${{ vars.CUSTOMER_APP_URL }}
+
+      - name: Compile check (no signing)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+
+      - name: Install signing certificate and profile
+        if: env.HAS_SIGNING == 'true'
+        run: |
+          echo "${{ secrets.IOS_CERT_P12_BASE64 }}" | base64 -d > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p ci "$RUNNER_TEMP/ci.keychain"
+          security default-keychain -s "$RUNNER_TEMP/ci.keychain"
+          security unlock-keychain -p ci "$RUNNER_TEMP/ci.keychain"
+          security import "$RUNNER_TEMP/cert.p12" -P "${{ secrets.IOS_CERT_PASSWORD }}" -A -t cert -f pkcs12 -k "$RUNNER_TEMP/ci.keychain"
+          security set-key-partition-list -S apple-tool:,apple: -s -k ci "$RUNNER_TEMP/ci.keychain"
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "${{ secrets.IOS_PROFILE_BASE64 }}" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/pikop.mobileprovision
+          UUID=$(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/pikop.mobileprovision | plutil -extract UUID raw -)
+          echo "PROFILE_UUID=$UUID" >> "$GITHUB_ENV"
+
+      - name: Archive and export
+        if: env.HAS_SIGNING == 'true'
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" archive \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
+            CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE=$PROFILE_UUID CODE_SIGN_IDENTITY="Apple Distribution"
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>provisioningProfiles</key><dict><key>app.pikop.customer</key><string>$PROFILE_UUID</string></dict>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" -exportPath "$RUNNER_TEMP/out" -exportOptionsPlist "$RUNNER_TEMP/export.plist"
+          echo "IPA=$(ls $RUNNER_TEMP/out/*.ipa)" >> "$GITHUB_ENV"
+
+      - name: Upload to TestFlight
+        if: env.HAS_SIGNING == 'true'
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "${{ secrets.APPSTORE_KEY_BASE64 }}" | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+          xcrun altool --upload-app --type ios --file "$IPA" --apiKey "${{ secrets.APPSTORE_KEY_ID }}" --apiIssuer "${{ secrets.APPSTORE_ISSUER_ID }}"
