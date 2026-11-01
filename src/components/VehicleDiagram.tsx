@@ -1,7 +1,7 @@
 import { sizeCm, type VehicleType } from "@/lib/vehicles";
 
 type Dims = Pick<VehicleType, "length_cm" | "width_cm" | "height_cm">;
-const ft = (cm: number) => `${Math.round((cm / 30.48) * 10) / 10} ft`;
+const ft = (cm: number) => `${Math.max(1, Math.round(cm / 30.48))} ft`;
 const COS = Math.cos(Math.PI / 6);
 const SIN = 0.5;
 
@@ -23,16 +23,15 @@ export default function VehicleDiagram({ v, code = "tata_ace", className = "" }:
   const totalL = L + front;
   const top = Math.max(floor + H, bike ? 100 : b.cabH);
   // One shared scale for every vehicle, sized so the biggest standard truck fills the picture. A bike is therefore drawn small.
-  // The person stands ahead and to the side of the vehicle, so that is included in the extent.
   const span = (l: number, w: number, h: number, k: number, f: number) => {
-    const corners = [-f, l - f].flatMap((x) => [0, w + 110].flatMap((y) => [0, h].map((z) => [(x - y) * COS * k, (x + y) * SIN * k - z * k])));
+    const corners = [-f, l - f].flatMap((x) => [0, w + 20].flatMap((y) => [0, h].map((z) => [(x - y) * COS * k, (x + y) * SIN * k - z * k])));
     const cxs = corners.map((c) => c[0]);
     const cys = corners.map((c) => c[1]);
     return { minX: Math.min(...cxs), maxX: Math.max(...cxs), minY: Math.min(...cys), maxY: Math.max(...cys) };
   };
   const fitFor = (l: number, w: number, h: number, f: number) => {
     const u = span(l, w, h, 1, f);
-    return Math.min(265 / (u.maxX - u.minX), 205 / (u.maxY - u.minY));
+    return Math.min(285 / (u.maxX - u.minX), 205 / (u.maxY - u.minY));
   };
   const k = Math.min(fitFor(380, 160, 175, 135), fitFor(totalL, W, top, front));
   const P = (x: number, y: number, z: number): [number, number] => [(x - y) * COS * k, (x + y) * SIN * k - z * k];
@@ -113,23 +112,6 @@ export default function VehicleDiagram({ v, code = "tata_ace", className = "" }:
     );
   };
 
-  // A 1.7 m person standing ahead of the vehicle, so the size is easy to judge.
-  const [px, py] = pt(-front + 25, W + 110, 0);
-  const h = 170 * k;
-  const person = (
-    <g key="person" className="stroke-stone-500" strokeWidth={1.6} strokeLinecap="round" fill="none">
-      <circle cx={px} cy={py - h + 0.065 * h} r={0.065 * h} className="fill-stone-500" />
-      <line x1={px} y1={py - h * 0.84} x2={px} y2={py - h * 0.48} />
-      <line x1={px} y1={py - h * 0.48} x2={px - 0.1 * h} y2={py} />
-      <line x1={px} y1={py - h * 0.48} x2={px + 0.1 * h} y2={py} />
-      <line x1={px - 0.16 * h} y1={py - h * 0.5} x2={px} y2={py - h * 0.78} />
-      <line x1={px + 0.16 * h} y1={py - h * 0.5} x2={px} y2={py - h * 0.78} />
-      <text x={px} y={py - h - 6} textAnchor="middle" className="fill-stone-500 text-[9px]" stroke="none">
-        1.7 m person
-      </text>
-    </g>
-  );
-
   const yM = W / 2;
   const rr = bike ? 30 : b.r;
   const wheels: React.ReactNode[] = [];
@@ -165,7 +147,6 @@ export default function VehicleDiagram({ v, code = "tata_ace", className = "" }:
       {bikeFrame}
       {bedBox}
       {wheels}
-      {person}
       {dim([0, W, floor], [L, W, floor], -off, off * 0.75, `Length ${ft(L)} · ${L} cm`, "end")}
       {dim([L, W, floor], [L, 0, floor], off, off * 0.75, `Width ${ft(W)} · ${W} cm`, "start")}
       {dim([L, 0, floor], [L, 0, floor + H], off * 1.1, 0, `Height ${ft(H)} · ${H} cm`, "start")}

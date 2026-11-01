@@ -15,7 +15,7 @@ export type VehicleType = {
   active: boolean;
 };
 
-const ft = (cm: number) => String(Math.round((cm / 30.48) * 10) / 10);
+const ft = (cm: number) => String(Math.max(1, Math.round(cm / 30.48)));
 
 export const sizeFeet = (v: Pick<VehicleType, "length_cm" | "width_cm" | "height_cm">) =>
   `${ft(v.length_cm)} × ${ft(v.width_cm)} × ${ft(v.height_cm)} ft`;
