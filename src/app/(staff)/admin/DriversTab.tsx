@@ -48,6 +48,19 @@ export default function DriversTab({
     reload();
   }
 
+  // Add (or take away) wallet credit by hand, for example a bonus or a correction. The driver sees the reason.
+  async function adjustWallet(d: Driver) {
+    const { data: bal } = await supabase().rpc("wallet_balance", { p_user: d.id, p_wallet: "driver" });
+    const ans = prompt(`${d.full_name}'s wallet: ₹${typeof bal === "number" ? bal : 0}. Add (+) or remove (−) how many ₹?`, "50");
+    const amount = Math.trunc(Number(ans));
+    if (!amount) return;
+    const note = prompt("Reason (the driver sees this):", "Bonus");
+    if (!note) return;
+    const { error } = await supabase().rpc("admin_adjust_wallet", { p_user: d.id, p_wallet: "driver", p_amount: amount, p_note: note });
+    if (error) setError(errorText(error));
+    else alert(`Done. Wallet is now ₹${(typeof bal === "number" ? bal : 0) + amount}.`);
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex gap-2 text-sm">
@@ -119,6 +132,9 @@ export default function DriversTab({
                   </button>
                   <button className="btn py-1.5" onClick={() => addPass(d, "weekly")}>
                     + Week pass
+                  </button>
+                  <button className="btn py-1.5" onClick={() => adjustWallet(d)}>
+                    ± Wallet
                   </button>
                 </>
               )}
