@@ -17,7 +17,9 @@ create table if not exists public.vehicle_types (
   active boolean not null default true
 );
 alter table public.vehicle_types enable row level security;
+drop policy if exists "anyone reads vehicle types" on public.vehicle_types;
 create policy "anyone reads vehicle types" on public.vehicle_types for select using (true);
+drop policy if exists "admin edits vehicle types" on public.vehicle_types;
 create policy "admin edits vehicle types" on public.vehicle_types for update using (public.is_admin()) with check (public.is_admin());
 grant select on public.vehicle_types to anon, authenticated;
 grant update on public.vehicle_types to authenticated;
