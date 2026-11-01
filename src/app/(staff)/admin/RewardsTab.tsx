@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { errorText, supabase } from "@/lib/supabase";
 import type { RewardSettings } from "@/lib/types";
 
-type Entry = { id: string; user_id: string; wallet: "customer" | "driver"; amount_rupees: number; kind: string; note: string | null; created_at: string };
+type Entry = { id: string; user_id: string; wallet: "customer" | "driver"; amount_rupees: number; remaining_rupees: number; expires_at: string | null; kind: string; note: string | null; created_at: string };
 type Referral = { id: string; referrer_id: string; referred_id: string; wallet: "customer" | "driver"; status: string; created_at: string; rewarded_at: string | null };
 type Person = { id: string; full_name: string | null; phone: string | null; driver_code?: string };
 
@@ -27,6 +27,7 @@ const NUMBERS: { key: keyof RewardSettings; label: string; hint?: string }[] = [
   { key: "referral_min_trip_m", label: "First trip must be at least (metres)", hint: "Shorter trips do not count" },
   { key: "referral_min_fare", label: "First trip fare must be at least (₹)" },
   { key: "wallet_max_percent", label: "Wallet can cover at most (% of a fare)" },
+  { key: "wallet_expiry_days", label: "New credit expires after (days, 0 = never)", hint: "Applies to credit given from now on. Oldest credit is used first." },
 ];
 
 const who = (p?: Person) => (p ? [p.driver_code, p.full_name, p.phone].filter(Boolean).join(" · ") || p.id.slice(0, 8) : "unknown");
@@ -42,7 +43,7 @@ export default function RewardsTab() {
   const load = useCallback(async () => {
     const sb = supabase();
     const [st, en, rf] = await Promise.all([
-      sb.from("settings").select("referral_driver_enabled, referral_customer_enabled, referral_driver_reward, referral_customer_reward, referral_customer_welcome, referral_max_driver, referral_max_customer, referral_min_trip_m, referral_min_fare, wallet_max_percent").single(),
+      sb.from("settings").select("referral_driver_enabled, referral_customer_enabled, referral_driver_reward, referral_customer_reward, referral_customer_welcome, referral_max_driver, referral_max_customer, referral_min_trip_m, referral_min_fare, wallet_max_percent, wallet_expiry_days").single(),
       sb.from("wallet_entries").select("*").order("created_at", { ascending: false }).limit(5000),
       sb.from("referrals").select("*").order("created_at", { ascending: false }).limit(1000),
     ]);
@@ -69,14 +70,20 @@ export default function RewardsTab() {
   }, [load]);
 
   const totals = useMemo(() => {
-    const t = { customer: { given: 0, spent: 0 }, driver: { given: 0, spent: 0 } };
+    const t = { customer: { given: 0, spent: 0, lapsed: 0 }, driver: { given: 0, spent: 0, lapsed: 0 } };
     const bal: Record<string, { wallet: "customer" | "driver"; user: string; amount: number }> = {};
+    const now = Date.now();
     for (const e of entries) {
-      if (e.amount_rupees > 0) t[e.wallet].given += e.amount_rupees;
-      else t[e.wallet].spent += -e.amount_rupees;
-      const k = `${e.wallet}:${e.user_id}`;
-      bal[k] = bal[k] ?? { wallet: e.wallet, user: e.user_id, amount: 0 };
-      bal[k].amount += e.amount_rupees;
+      if (e.amount_rupees > 0) {
+        t[e.wallet].given += e.amount_rupees;
+        const lapsed = e.expires_at !== null && new Date(e.expires_at).getTime() <= now;
+        if (lapsed) t[e.wallet].lapsed += e.remaining_rupees;
+        else {
+          const k = `${e.wallet}:${e.user_id}`;
+          bal[k] = bal[k] ?? { wallet: e.wallet, user: e.user_id, amount: 0 };
+          bal[k].amount += e.remaining_rupees;
+        }
+      } else t[e.wallet].spent += -e.amount_rupees;
     }
     return { t, balances: Object.values(bal).filter((b) => b.amount !== 0).sort((a, b) => b.amount - a.amount) };
   }, [entries]);
@@ -109,7 +116,7 @@ export default function RewardsTab() {
   };
 
   const km = (s.referral_min_trip_m / 1000).toFixed(1).replace(/\.0$/, "");
-  const outstanding = (w: "customer" | "driver") => totals.t[w].given - totals.t[w].spent;
+  const outstanding = (w: "customer" | "driver") => totals.t[w].given - totals.t[w].spent - totals.t[w].lapsed;
   const counts = (st: string) => referrals.filter((r) => r.status === st).length;
 
   return (
@@ -118,12 +125,12 @@ export default function RewardsTab() {
         <div className="card">
           <p className="text-xs text-stone-500">Customer credit outstanding</p>
           <p className="text-2xl font-bold">₹{outstanding("customer")}</p>
-          <p className="text-xs text-stone-500">given ₹{totals.t.customer.given} · used ₹{totals.t.customer.spent}</p>
+          <p className="text-xs text-stone-500">given ₹{totals.t.customer.given} · used ₹{totals.t.customer.spent} · expired ₹{totals.t.customer.lapsed}</p>
         </div>
         <div className="card">
           <p className="text-xs text-stone-500">Driver credit outstanding</p>
           <p className="text-2xl font-bold">₹{outstanding("driver")}</p>
-          <p className="text-xs text-stone-500">given ₹{totals.t.driver.given} · used ₹{totals.t.driver.spent}</p>
+          <p className="text-xs text-stone-500">given ₹{totals.t.driver.given} · used ₹{totals.t.driver.spent} · expired ₹{totals.t.driver.lapsed}</p>
         </div>
         <div className="card">
           <p className="text-xs text-stone-500">Referrals</p>
@@ -165,6 +172,10 @@ export default function RewardsTab() {
           </p>
           <p>
             <b>IF</b> a customer has credit <b>THEN</b> it covers at most {s.wallet_max_percent}% of a fare. Pikop pays the driver that amount as wallet credit after delivery.
+          </p>
+          <p>
+            <b>IF</b> a driver's pass runs out <b>AND</b> they have auto-renew on <b>AND</b> enough wallet credit <b>THEN</b> the same kind of pass is bought from the wallet.
+            {s.wallet_expiry_days > 0 ? <> Credit given from now on expires after {s.wallet_expiry_days} days, oldest first.</> : <> Credit does not expire.</>}
           </p>
         </div>
         <button className="btn btn-primary w-full">Save rules</button>

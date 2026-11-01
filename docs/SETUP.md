@@ -27,6 +27,7 @@ You'll need: a GitHub login (you have one), and an email address to sign up for 
 9. Once more with [`supabase/migrations/0007_referrals_wallet.sql`](../supabase/migrations/0007_referrals_wallet.sql). This adds referral codes, wallets and credit on trips and passes. Rules are edited in **Admin → Referrals**.
 10. Once more with [`supabase/migrations/0008_saved_routes.sql`](../supabase/migrations/0008_saved_routes.sql). This adds saved routes (Account → Saved routes, and a quick list on the booking screen).
 11. Once more with [`supabase/migrations/0009_driver_codes.sql`](../supabase/migrations/0009_driver_codes.sql). This gives every driver a short ID (PK1001 …) and adds Admin → Bulk credit.
+12. Once more with [`supabase/migrations/0010_autorenew_expiry.sql`](../supabase/migrations/0010_autorenew_expiry.sql). Passes can auto-renew from the wallet, and wallet credit can be set to expire (Admin → Referrals → Rules).
 
 Check: **Table Editor** in the sidebar now lists `drivers`, `jobs`, `profiles`, `settings` and a few more.
 

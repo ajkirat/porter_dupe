@@ -23,14 +23,16 @@ export default function WalletCard() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [ready, setReady] = useState(true);
+  const [expiring, setExpiring] = useState<{ amount: number; expires_at: string } | null>(null);
 
   const load = useCallback(async () => {
     const sb = supabase();
-    const [b, c, e, r] = await Promise.all([
+    const [b, c, e, r, x] = await Promise.all([
       sb.rpc("my_wallet", { p_wallet: "customer" }),
       sb.rpc("my_referral_code"),
       sb.from("wallet_entries").select("id, amount_rupees, kind, note, created_at").eq("wallet", "customer").order("created_at", { ascending: false }).limit(20),
       sb.rpc("my_referrals", { p_wallet: "customer" }),
+      sb.rpc("my_wallet_expiring", { p_wallet: "customer" }),
     ]);
     // Until migration 0007 is applied these calls fail; then the card stays hidden.
     if (b.error || c.error) return setReady(false);
@@ -38,6 +40,7 @@ export default function WalletCard() {
     setCode(typeof c.data === "string" ? c.data : "");
     setEntries((e.data as WalletEntry[]) ?? []);
     setReferrals((r.data as ReferralItem[]) ?? []);
+    setExpiring(((x.data as { amount: number; expires_at: string }[] | null) ?? [])[0] ?? null);
   }, []);
 
   useEffect(() => {
@@ -69,6 +72,7 @@ export default function WalletCard() {
       <div className="rounded-2xl bg-stone-900 p-4 text-white">
         <p className="text-xs uppercase tracking-wide opacity-70">Wallet</p>
         <p className="text-3xl font-extrabold">₹{balance ?? 0}</p>
+        {expiring && <p className="mt-1 text-xs text-amber-300">₹{expiring.amount} expires on {new Date(expiring.expires_at).toLocaleDateString("en-IN", { dateStyle: "medium" })}</p>}
         <p className="mt-1 text-xs opacity-70">Credit comes off your next trips automatically. You still pay the driver the rest.</p>
       </div>
 

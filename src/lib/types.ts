@@ -128,4 +128,5 @@ export type RewardSettings = {
   referral_min_trip_m: number;
   referral_min_fare: number;
   wallet_max_percent: number;
+  wallet_expiry_days: number;
 };

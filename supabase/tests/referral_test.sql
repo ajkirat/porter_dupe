@@ -273,4 +273,55 @@ select pg_temp.expect_error($$select public.admin_bulk_wallet_credit(array[gen_r
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
 select pg_temp.expect_error($$select public.admin_bulk_wallet_credit(array['00000000-0000-0000-0000-00000000000d']::uuid[], 500, 'self')$$, 'admins only');
 
+-- Auto-renew from the wallet. Driver F's daily pass is made to have expired.
+reset role;
+update public.driver_passes set starts_at = starts_at - interval '3 days', ends_at = ends_at - interval '3 days' where driver_id = '00000000-0000-0000-0000-0000000000a4';
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a4');
+do $$ begin
+  assert not public.has_active_pass(auth.uid()), 'F pass should have expired';
+  assert public.driver_auto_renew() is null, 'no credit yet: nothing to renew';
+end $$;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select public.admin_adjust_wallet('00000000-0000-0000-0000-0000000000a4', 'driver', 100, 'bonus');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a4');
+select public.driver_set_auto_renew(false);
+do $$ begin assert public.driver_auto_renew() is null, 'opted out: must not renew'; end $$;
+select public.driver_set_auto_renew(true);
+do $$ declare p public.driver_passes; begin
+  p := public.driver_auto_renew();
+  assert p.id is not null and p.kind = 'daily', 'daily pass should auto-renew';
+  assert public.has_active_pass(auth.uid()), 'pass should be active again';
+  assert public.my_wallet('driver') = 100 - 75, 'price not taken';
+  assert public.driver_auto_renew() is null, 'must not renew twice';
+end $$;
+
+-- Credit expiry, first in first out.
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a5');
+do $$ begin assert public.my_wallet('driver') = 0, 'G starts empty for the expiry check'; end $$;
+reset role;
+update public.settings set wallet_expiry_days = 30;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select public.admin_adjust_wallet('00000000-0000-0000-0000-0000000000a5', 'driver', 50, 'A');   -- will lapse
+select public.admin_adjust_wallet('00000000-0000-0000-0000-0000000000a5', 'driver', 80, 'B');
+reset role;
+update public.wallet_entries set expires_at = now() - interval '1 day' where note = 'A';
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a5');
+do $$ begin
+  assert public.my_wallet('driver') = 80, 'lapsed credit must not count';
+  assert (select amount from public.my_wallet_expiring('driver')) = 80, 'next expiry amount';
+  assert (select expires_at from public.my_wallet_expiring('driver')) > now() + interval '29 days', 'expiry date';
+end $$;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select public.admin_adjust_wallet('00000000-0000-0000-0000-0000000000a5', 'driver', -30, 'spend');   -- must come out of B, not the lapsed A
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a5');
+do $$ begin assert public.my_wallet('driver') = 50, 'spend should come from live credit'; end $$;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select pg_temp.expect_error($$select public.admin_adjust_wallet('00000000-0000-0000-0000-0000000000a5', 'driver', -60, 'too much')$$, 'below zero');
+reset role;
+update public.settings set wallet_expiry_days = 0;
+set role authenticated;
+
 \echo 'REFERRAL CHECKS PASSED'
