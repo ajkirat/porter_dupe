@@ -50,7 +50,7 @@ export default function PayCard({ job, driver, onChange }: { job: Job; driver: D
         <p className="font-semibold">Pay the driver</p>
         <p className="text-xl font-extrabold">₹{due}</p>
       </div>
-      <p className="mt-0.5 text-xs text-stone-500">Pay any time until the parcel is delivered. The money goes straight to the driver; Pikop never touches it.</p>
+      <p className="mt-0.5 text-xs text-stone-500">Pay now that the trip is complete. The money goes straight to the driver; Pikop never touches it.</p>
       <div className="mt-3 grid grid-cols-3 gap-2">
         {TABS.map((o) => (
           <button key={o.v} type="button" onClick={() => setTab(o.v)} className={`rounded-xl border-2 py-2 text-sm font-medium ${tab === o.v ? "border-brand bg-orange-50 text-brand" : "border-stone-200"}`}>
@@ -61,7 +61,7 @@ export default function PayCard({ job, driver, onChange }: { job: Job; driver: D
 
       <div className="mt-3 text-sm">
         {tab === "cash" && <p className="text-stone-700">Hand ₹{due} in cash to the driver when they are with you.</p>}
-        {needDriver && <p className="text-stone-700">A driver has not accepted yet. You can pay by UPI once they do, or choose cash.</p>}
+        {needDriver && <p className="text-stone-700">This driver is not available for UPI. Please pay in cash.</p>}
         {noVpa && <p className="text-stone-700">This driver has not added a valid UPI ID. Please pay in cash.</p>}
         {tab === "upi" && link && (
           <>

@@ -189,7 +189,7 @@ export default function OrderView() {
           <div className="mt-4 flex items-center gap-3 rounded-2xl bg-green-50 p-4 text-green-800">
             <CheckIcon className="h-8 w-8" />
             <p className="text-sm">
-              Delivered. Please make sure the driver has been paid ₹{job.fare_rupees - (job.wallet_discount ?? 0)} if you have not done so yet.
+              Delivered. Please pay the driver ₹{job.fare_rupees - (job.wallet_discount ?? 0)} below.
             </p>
           </div>
         )}
@@ -218,7 +218,7 @@ export default function OrderView() {
           </div>
         )}
 
-        {active && <PayCard job={job} driver={driver} onChange={load} />}
+        {job.status === "delivered" && <PayCard job={job} driver={driver} onChange={load} />}
 
         <div className="mt-4 space-y-1.5 text-sm">
           <p>

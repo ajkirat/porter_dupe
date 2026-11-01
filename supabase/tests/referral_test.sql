@@ -324,21 +324,20 @@ reset role;
 update public.settings set wallet_expiry_days = 0;
 set role authenticated;
 
--- Pay anytime: customer notes how they paid; others cannot; closed orders reject it; earnings unaffected.
+-- Pay on delivery: payment can be noted only after the trip is delivered; earnings never depend on it.
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000a6');
 create temp table t_jpayx as
   select * from public.create_job('Koramangala', 12.9352, 77.6245, 'Indiranagar', 12.9784, 77.6408, 'Meera', '+919000000009', 5000, 900);
 grant select on t_jpayx to authenticated;
-select public.customer_mark_paid((select id from t_jpayx), 'upi');
-do $$ begin assert (select paid_via from public.jobs where id = (select id from t_jpayx)) = 'upi', 'paid_via not saved'; end $$;
-select pg_temp.expect_error($$select public.customer_mark_paid((select id from t_jpayx), 'bitcoin')$$, 'unknown payment method');
-select pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
-select pg_temp.expect_error($$select public.customer_mark_paid((select id from t_jpayx), 'cash')$$, 'cannot be marked');
+select pg_temp.expect_error($$select public.customer_mark_paid((select id from t_jpayx), 'upi')$$, 'cannot be marked');
 reset role;
 select pg_temp.run_trip((select id from t_jpayx), '00000000-0000-0000-0000-0000000000a5');
 set role authenticated;
-select pg_temp.as_user('00000000-0000-0000-0000-0000000000a6');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
 select pg_temp.expect_error($$select public.customer_mark_paid((select id from t_jpayx), 'cash')$$, 'cannot be marked');
-do $$ begin assert (select status from public.jobs where id = (select id from t_jpayx)) = 'delivered', 'trip completes regardless of payment note'; end $$;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a6');
+select pg_temp.expect_error($$select public.customer_mark_paid((select id from t_jpayx), 'bitcoin')$$, 'unknown payment method');
+select public.customer_mark_paid((select id from t_jpayx), 'upi');
+do $$ begin assert (select paid_via from public.jobs where id = (select id from t_jpayx)) = 'upi', 'paid_via not saved'; end $$;
 
 \echo 'REFERRAL CHECKS PASSED'
