@@ -154,7 +154,7 @@ export default function OrderView() {
             <h1 className="text-xl font-bold">{job.status === "accepted" && job.driver_arrived_at ? "Driver has arrived at pickup" : HEADLINE[job.status]}</h1>
             {job.status === "requested" && <p className="mt-0.5 text-sm text-stone-500">This can take a few minutes. We&apos;ll update this screen.</p>}
           </div>
-          <p className="text-xl font-bold">₹{job.fare_rupees}</p>
+          <p className="text-xl font-bold">₹{job.fare_rupees - (job.wallet_discount ?? 0)}</p>
         </div>
 
         {tracking && (
@@ -188,7 +188,7 @@ export default function OrderView() {
           <div className="mt-4 flex items-center gap-3 rounded-2xl bg-green-50 p-4 text-green-800">
             <CheckIcon className="h-8 w-8" />
             <p className="text-sm">
-              Delivered. ₹{job.fare_rupees} is paid to the driver {PAY_AT_LABEL[job.pay_at]} by {job.payment_mode === "cash" ? "cash" : "UPI"}. If that hasn&apos;t happened yet, please settle it with the driver now.
+              Delivered. ₹{job.fare_rupees - (job.wallet_discount ?? 0)} is paid to the driver {PAY_AT_LABEL[job.pay_at]} by {job.payment_mode === "cash" ? "cash" : "UPI"}. If that hasn&apos;t happened yet, please settle it with the driver now.
             </p>
           </div>
         )}
@@ -227,7 +227,7 @@ export default function OrderView() {
             {job.drop_address}
           </p>
           <p className="pt-1 text-xs text-stone-500">
-            {formatKm(job.distance_m)} · ₹{job.fare_rupees} to the driver {PAY_AT_LABEL[job.pay_at]} by {job.payment_mode === "cash" ? "cash" : "UPI"} · receiver {job.receiver_name}
+            {formatKm(job.distance_m)} · ₹{job.fare_rupees - (job.wallet_discount ?? 0)} to the driver {PAY_AT_LABEL[job.pay_at]} by {job.payment_mode === "cash" ? "cash" : "UPI"} · receiver {job.receiver_name}
           </p>
         </div>
 

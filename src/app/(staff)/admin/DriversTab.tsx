@@ -35,7 +35,15 @@ export default function DriversTab({
   async function addPass(d: Driver, kind: "daily" | "weekly") {
     const note = prompt(`Record a ${kind} pass for ${d.full_name}. Payment reference (optional):`, "");
     if (note === null) return;
-    const { error } = await supabase().rpc("admin_add_pass", { p_driver: d.id, p_kind: kind, p_note: note || null });
+    // If the driver has wallet credit (from referrals), offer to use some of it for this pass.
+    let wallet = 0;
+    const { data: bal } = await supabase().rpc("wallet_balance", { p_user: d.id, p_wallet: "driver" });
+    if (typeof bal === "number" && bal > 0) {
+      const ans = prompt(`${d.full_name} has ₹${bal} wallet credit. How much of it goes toward this pass? (0 = none)`, "0");
+      if (ans === null) return;
+      wallet = Math.max(0, Math.trunc(Number(ans)) || 0);
+    }
+    const { error } = await supabase().rpc("admin_add_pass", { p_driver: d.id, p_kind: kind, p_note: note || null, ...(wallet > 0 ? { p_wallet_rupees: wallet } : {}) });
     if (error) setError(errorText(error));
     reload();
   }

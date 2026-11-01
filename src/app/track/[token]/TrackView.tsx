@@ -24,6 +24,7 @@ type Tracking = {
   driver_seen_at: string | null;
   delivered_at: string | null;
   fare_rupees: number;
+  wallet_discount?: number;
   pay_at: "pickup" | "drop";
   payment_mode: "cash" | "upi_to_driver";
 };
@@ -81,7 +82,7 @@ export default function TrackView() {
         )}
         {t.pay_at === "drop" && t.status !== "delivered" && t.status !== "cancelled" && (
           <p className="rounded-lg bg-orange-50 p-3 font-medium text-orange-900">
-            Please keep ₹{t.fare_rupees} ready for the driver ({t.payment_mode === "cash" ? "cash" : "UPI"}) when the parcel arrives.
+            Please keep ₹{t.fare_rupees - (t.wallet_discount ?? 0)} ready for the driver ({t.payment_mode === "cash" ? "cash" : "UPI"}) when the parcel arrives.
           </p>
         )}
         {t.driver_seen_at && (

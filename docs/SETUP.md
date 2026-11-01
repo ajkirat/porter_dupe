@@ -23,6 +23,8 @@ You'll need: a GitHub login (you have one), and an email address to sign up for 
 5. Click **+** once more and do the same with [`supabase/migrations/0003_pay_at_and_tracking.sql`](../supabase/migrations/0003_pay_at_and_tracking.sql). It adds the "pay at pickup or drop" choice.
 6. Once more with [`supabase/migrations/0004_driver_app.sql`](../supabase/migrations/0004_driver_app.sql). It adds "driver arrived" and dropping a job, used by the driver app.
 7. Once more with [`supabase/migrations/0005_selfie_check.sql`](../supabase/migrations/0005_selfie_check.sql). Drivers must then take a selfie to go online.
+8. Once more with [`supabase/migrations/0006_push_tokens.sql`](../supabase/migrations/0006_push_tokens.sql) (push alerts, see `docs/PUSH.md`).
+9. Once more with [`supabase/migrations/0007_referrals_wallet.sql`](../supabase/migrations/0007_referrals_wallet.sql). This adds referral codes, wallets and credit on trips and passes. Rules are edited in **Admin → Referrals**.
 
 Check: **Table Editor** in the sidebar now lists `drivers`, `jobs`, `profiles`, `settings` and a few more.
 

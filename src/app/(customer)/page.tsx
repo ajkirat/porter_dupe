@@ -40,6 +40,9 @@ export default function HomePage() {
     payment_mode: "cash",
     pay_at: "drop",
   });
+  const [wallet, setWallet] = useState(0);
+  const [walletPct, setWalletPct] = useState(50);
+  const [useWallet, setUseWallet] = useState(true);
   const [sheetH, setSheetH] = useState(320);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -72,6 +75,13 @@ export default function HomePage() {
       .select("base_fare, included_km, per_km, min_fare")
       .single()
       .then(({ data }) => data && setFareSettings(data));
+  }, []);
+
+  // Wallet credit (from referrals). Both calls fail quietly if the wallet migration has not been applied yet.
+  useEffect(() => {
+    const sb = supabase();
+    sb.rpc("my_wallet", { p_wallet: "customer" }).then(({ data }) => setWallet(typeof data === "number" ? data : 0));
+    sb.from("settings").select("wallet_max_percent").single().then(({ data }) => data && setWalletPct(data.wallet_max_percent));
   }, []);
 
   // Road route and fare for the chosen pair of points.
@@ -127,6 +137,7 @@ export default function HomePage() {
       p_pickup_contact_phone: form.pickup_contact_phone ? toE164(form.pickup_contact_phone) : null,
       p_payment_mode: form.payment_mode,
       p_pay_at: form.pay_at,
+      ...(discount > 0 ? { p_use_wallet: true } : {}),
     });
     setBusy(false);
     if (error) return setError(errorText(error));
@@ -140,6 +151,8 @@ export default function HomePage() {
     if (drop) markers.push({ pos: drop, label: "Drop", kind: "drop" });
   }
   const fare = route ? computeFare(route.distanceM, fareSettings) : null;
+  // Same rule as the server: credit covers at most walletPct% of the fare.
+  const discount = fare !== null && useWallet ? Math.max(0, Math.min(wallet, Math.floor((fare * walletPct) / 100))) : 0;
   const field = (k: keyof typeof form) => ({
     value: form[k],
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value }),
@@ -302,11 +315,22 @@ export default function HomePage() {
                   </button>
                 ))}
               </div>
-              <p className="mt-1 text-xs text-stone-500">You pay the driver directly, {form.pay_at === "pickup" ? "when they collect the parcel" : "when the parcel is delivered"}. Pikop never handles the money.</p>
+              <p className="mt-1 text-xs text-stone-500">You pay the driver directly, {form.pay_at === "pickup" ? "when they collect the parcel" : "when the parcel is delivered"}. Pikop never handles the money.{discount > 0 && ` Your wallet credit lowers what you pay the driver to ₹${(fare ?? 0) - discount}.`}</p>
             </div>
+            {wallet > 0 && (
+              <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-green-600 bg-green-50 p-3 text-sm">
+                <span>
+                  <b>Use wallet credit</b>
+                  <span className="block text-xs text-stone-600">
+                    You have ₹{wallet}. {useWallet ? `₹${discount} comes off this trip.` : "Tap to use it on this trip."}
+                  </span>
+                </span>
+                <input type="checkbox" className="h-5 w-5" checked={useWallet} onChange={(e) => setUseWallet(e.target.checked)} />
+              </label>
+            )}
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button className="btn btn-primary w-full py-3.5 text-base" disabled={!detailsValid || busy}>
-              {busy ? "Booking…" : `Book Bike · ₹${fare}`}
+              {busy ? "Booking…" : `Book Bike · ₹${(fare ?? 0) - discount}`}
             </button>
           </form>
         </Sheet>

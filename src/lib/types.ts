@@ -59,6 +59,7 @@ export type Job = {
   distance_m: number;
   duration_s: number | null;
   fare_rupees: number;
+  wallet_discount?: number;
   payment_mode: "cash" | "upi_to_driver";
   pay_at: "pickup" | "drop";
   tracking_token: string;
@@ -101,3 +102,29 @@ export const STATUS_LABEL: Record<JobStatus, string> = {
 export const ACTIVE_STATUSES: JobStatus[] = ["requested", "assigned", "accepted", "picked_up"];
 
 export const PAY_AT_LABEL: Record<Job["pay_at"], string> = { pickup: "at pickup", drop: "at drop" };
+
+export type WalletEntry = {
+  id: string;
+  user_id?: string;
+  wallet?: "customer" | "driver";
+  amount_rupees: number;
+  kind: string;
+  note: string | null;
+  created_at: string;
+};
+
+export type ReferralItem = { who: string; status: "pending" | "rewarded" | "capped"; reward: number | null; created_at: string };
+
+// Referral and wallet rules the admin can change. Added by migration 0007.
+export type RewardSettings = {
+  referral_driver_enabled: boolean;
+  referral_customer_enabled: boolean;
+  referral_driver_reward: number;
+  referral_customer_reward: number;
+  referral_customer_welcome: number;
+  referral_max_driver: number;
+  referral_max_customer: number;
+  referral_min_trip_m: number;
+  referral_min_fare: number;
+  wallet_max_percent: number;
+};

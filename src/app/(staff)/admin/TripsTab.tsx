@@ -79,7 +79,7 @@ export default function TripsTab({ eligible }: { eligible: Driver[] }) {
                 <span className="text-xs text-stone-500">{new Date(j.created_at).toLocaleString("en-IN")}</span>
               </div>
               <span className="font-semibold">
-                ₹{j.fare_rupees} · {formatKm(j.distance_m)} · pay {j.pay_at}
+                ₹{j.fare_rupees}{j.wallet_discount ? ` (−₹${j.wallet_discount} wallet)` : ""} · {formatKm(j.distance_m)} · pay {j.pay_at}
               </span>
             </div>
             <p>

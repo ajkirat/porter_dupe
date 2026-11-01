@@ -43,7 +43,7 @@ export default function OrdersPage() {
             <Link href={`/orders/${j.id}`} className="block rounded-2xl border border-stone-200 p-4 active:bg-stone-50">
               <div className="flex items-center justify-between gap-3">
                 <StatusBadge status={j.status} />
-                <span className="font-bold">₹{j.fare_rupees}</span>
+                <span className="font-bold">₹{j.fare_rupees - (j.wallet_discount ?? 0)}</span>
               </div>
               <p className="mt-3 truncate text-sm">
                 <span className="mr-2 text-green-600">●</span>
