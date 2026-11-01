@@ -10,6 +10,7 @@ export type Profile = {
 
 export type Driver = {
   id: string;
+  driver_code?: string;
   full_name: string;
   phone: string;
   vehicle_type: string;

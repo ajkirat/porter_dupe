@@ -4,12 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import RequireUser from "@/components/RequireUser";
 import { supabase } from "@/lib/supabase";
 import type { Driver, DriverPass } from "@/lib/types";
+import BulkCreditTab from "./BulkCreditTab";
 import DriversTab from "./DriversTab";
 import RewardsTab from "./RewardsTab";
 import SettingsTab from "./SettingsTab";
 import TripsTab from "./TripsTab";
 
-const TABS = ["Trips", "Drivers", "Referrals", "Settings"] as const;
+const TABS = ["Trips", "Drivers", "Bulk credit", "Referrals", "Settings"] as const;
 
 function Admin() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Trips");
@@ -57,6 +58,7 @@ function Admin() {
       </div>
       {tab === "Trips" && <TripsTab eligible={eligible} />}
       {tab === "Drivers" && <DriversTab drivers={drivers} activePass={activePass} reload={load} />}
+      {tab === "Bulk credit" && <BulkCreditTab />}
       {tab === "Referrals" && <RewardsTab />}
       {tab === "Settings" && <SettingsTab />}
     </div>

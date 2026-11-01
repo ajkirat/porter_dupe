@@ -6,7 +6,7 @@ import type { RewardSettings } from "@/lib/types";
 
 type Entry = { id: string; user_id: string; wallet: "customer" | "driver"; amount_rupees: number; kind: string; note: string | null; created_at: string };
 type Referral = { id: string; referrer_id: string; referred_id: string; wallet: "customer" | "driver"; status: string; created_at: string; rewarded_at: string | null };
-type Person = { id: string; full_name: string | null; phone: string | null };
+type Person = { id: string; full_name: string | null; phone: string | null; driver_code?: string };
 
 const KIND: Record<string, string> = {
   referral_welcome: "Welcome credit",
@@ -29,7 +29,7 @@ const NUMBERS: { key: keyof RewardSettings; label: string; hint?: string }[] = [
   { key: "wallet_max_percent", label: "Wallet can cover at most (% of a fare)" },
 ];
 
-const who = (p?: Person) => (p ? [p.full_name, p.phone].filter(Boolean).join(" · ") || p.id.slice(0, 8) : "unknown");
+const who = (p?: Person) => (p ? [p.driver_code, p.full_name, p.phone].filter(Boolean).join(" · ") || p.id.slice(0, 8) : "unknown");
 
 export default function RewardsTab() {
   const [s, setS] = useState<RewardSettings | null>(null);
@@ -55,7 +55,7 @@ export default function RewardsTab() {
     const ids = [...new Set([...e.map((x) => x.user_id), ...r.flatMap((x) => [x.referrer_id, x.referred_id])])];
     if (ids.length) {
       const { data } = await sb.from("profiles").select("id, full_name, phone").in("id", ids);
-      const { data: ds } = await sb.from("drivers").select("id, full_name, phone").in("id", ids);
+      const { data: ds } = await sb.from("drivers").select("id, full_name, phone, driver_code").in("id", ids);
       const map: Record<string, Person> = {};
       for (const p of (data as Person[]) ?? []) map[p.id] = p;
       for (const d of (ds as Person[]) ?? []) map[d.id] = { ...map[d.id], ...d, full_name: d.full_name };

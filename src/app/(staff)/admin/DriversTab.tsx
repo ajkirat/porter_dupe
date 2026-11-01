@@ -78,6 +78,7 @@ export default function DriversTab({
           <div key={d.id} className="card space-y-2 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="font-semibold">
+                <span className="mr-2 rounded-md bg-stone-900 px-1.5 py-0.5 font-mono text-xs text-white">{d.driver_code ?? "—"}</span>
                 {d.full_name} <span className="font-normal text-stone-500">· {d.phone}</span>
               </p>
               <span className="text-xs text-stone-500">

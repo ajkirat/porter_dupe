@@ -254,4 +254,23 @@ do $$ begin
 end $$;
 select pg_temp.expect_error($$insert into public.saved_routes (label, pickup_address, pickup_lat, pickup_lng, drop_address, drop_lat, drop_lng) values ('21st', 'A', 1, 1, 'B', 2, 2)$$, 'up to 20');
 
+-- Driver IDs and bulk credit.
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+do $$ begin
+  assert (select count(distinct driver_code) from public.drivers) = (select count(*) from public.drivers), 'driver codes not unique';
+  assert (select bool_and(driver_code ~ '^PK[0-9]{4,}$') from public.drivers), 'driver code format';
+end $$;
+do $$ declare before_d integer; before_e integer; begin
+  before_d := public.wallet_balance('00000000-0000-0000-0000-00000000000d', 'driver');
+  before_e := public.wallet_balance('00000000-0000-0000-0000-00000000000e', 'driver');
+  assert public.admin_bulk_wallet_credit(array['00000000-0000-0000-0000-00000000000d','00000000-0000-0000-0000-00000000000e','00000000-0000-0000-0000-00000000000d']::uuid[], 40, 'Launch bonus') = 2, 'duplicates should count once';
+  assert public.wallet_balance('00000000-0000-0000-0000-00000000000d', 'driver') = before_d + 40, 'D not credited';
+  assert public.wallet_balance('00000000-0000-0000-0000-00000000000e', 'driver') = before_e + 40, 'E not credited';
+end $$;
+select pg_temp.expect_error($$select public.admin_bulk_wallet_credit(array['00000000-0000-0000-0000-00000000000d']::uuid[], -5, 'x')$$, 'between 1 and 10000');
+select pg_temp.expect_error($$select public.admin_bulk_wallet_credit(array['00000000-0000-0000-0000-00000000000d']::uuid[], 5, '')$$, 'reason is required');
+select pg_temp.expect_error($$select public.admin_bulk_wallet_credit(array[gen_random_uuid()], 5, 'x')$$, 'no matching drivers');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
+select pg_temp.expect_error($$select public.admin_bulk_wallet_credit(array['00000000-0000-0000-0000-00000000000d']::uuid[], 500, 'self')$$, 'admins only');
+
 \echo 'REFERRAL CHECKS PASSED'
