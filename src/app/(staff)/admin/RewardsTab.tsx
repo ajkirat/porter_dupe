@@ -39,6 +39,7 @@ export default function RewardsTab() {
   const [people, setPeople] = useState<Record<string, Person>>({});
   const [msg, setMsg] = useState("");
   const [missing, setMissing] = useState(false);
+  const [asOf] = useState(() => Date.now());
 
   const load = useCallback(async () => {
     const sb = supabase();
@@ -72,11 +73,10 @@ export default function RewardsTab() {
   const totals = useMemo(() => {
     const t = { customer: { given: 0, spent: 0, lapsed: 0 }, driver: { given: 0, spent: 0, lapsed: 0 } };
     const bal: Record<string, { wallet: "customer" | "driver"; user: string; amount: number }> = {};
-    const now = Date.now();
     for (const e of entries) {
       if (e.amount_rupees > 0) {
         t[e.wallet].given += e.amount_rupees;
-        const lapsed = e.expires_at !== null && new Date(e.expires_at).getTime() <= now;
+        const lapsed = e.expires_at !== null && new Date(e.expires_at).getTime() <= asOf;
         if (lapsed) t[e.wallet].lapsed += e.remaining_rupees;
         else {
           const k = `${e.wallet}:${e.user_id}`;
@@ -86,7 +86,7 @@ export default function RewardsTab() {
       } else t[e.wallet].spent += -e.amount_rupees;
     }
     return { t, balances: Object.values(bal).filter((b) => b.amount !== 0).sort((a, b) => b.amount - a.amount) };
-  }, [entries]);
+  }, [entries, asOf]);
 
   if (missing) return <p className="card text-sm">Referrals are not set up yet. Run migration <code>0007_referrals_wallet.sql</code> in the Supabase SQL Editor.</p>;
   if (!s) return <p className="text-stone-500">Loading…</p>;
@@ -174,7 +174,7 @@ export default function RewardsTab() {
             <b>IF</b> a customer has credit <b>THEN</b> it covers at most {s.wallet_max_percent}% of a fare. Pikop pays the driver that amount as wallet credit after delivery.
           </p>
           <p>
-            <b>IF</b> a driver's pass runs out <b>AND</b> they have auto-renew on <b>AND</b> enough wallet credit <b>THEN</b> the same kind of pass is bought from the wallet.
+            <b>IF</b> a driver&apos;s pass runs out <b>AND</b> they have auto-renew on <b>AND</b> enough wallet credit <b>THEN</b> the same kind of pass is bought from the wallet.
             {s.wallet_expiry_days > 0 ? <> Credit given from now on expires after {s.wallet_expiry_days} days, oldest first.</> : <> Credit does not expire.</>}
           </p>
         </div>
