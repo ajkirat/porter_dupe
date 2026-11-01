@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useUser } from "@/components/UserContext";
 import SavedRoutes from "@/components/SavedRoutes";
 import WalletCard from "@/components/WalletCard";
@@ -10,7 +9,7 @@ import { supabase } from "@/lib/supabase";
 const DRIVER_APP_URL = process.env.NEXT_PUBLIC_DRIVER_APP_URL;
 
 export default function AccountPage() {
-  const { user, profile } = useUser();
+  const { user } = useUser();
   const phone = user.phone ? `+${user.phone.replace(/^\+/, "")}` : "";
 
   return (
@@ -27,11 +26,6 @@ export default function AccountPage() {
           <p className="font-semibold">Drive with {APP_NAME}</p>
           <p className="text-sm text-stone-500">Earn with your bike. Keep every rupee of the fare. Opens the {APP_NAME} Driver app.</p>
         </a>
-      )}
-      {profile?.is_admin && (
-        <Link href="/admin" className="block rounded-2xl border border-stone-200 p-4 active:bg-stone-50">
-          <p className="font-semibold">Admin panel</p>
-        </Link>
       )}
       <div className="rounded-2xl bg-orange-50 p-4 text-sm text-stone-700">
         <p className="font-semibold">Add {APP_NAME} to your home screen</p>
