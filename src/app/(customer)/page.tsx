@@ -331,7 +331,7 @@ export default function HomePage() {
                       <p className="text-xl font-bold">₹{computeFare(route.distanceM, rates(v))}</p>
                       {on && (
                         <div className="basis-full">
-                          <VehicleDiagram v={v} />
+                          <VehicleDiagram v={v} code={v.code} />
                         </div>
                       )}
                     </button>
