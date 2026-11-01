@@ -25,6 +25,7 @@ You'll need: a GitHub login (you have one), and an email address to sign up for 
 7. Once more with [`supabase/migrations/0005_selfie_check.sql`](../supabase/migrations/0005_selfie_check.sql). Drivers must then take a selfie to go online.
 8. Once more with [`supabase/migrations/0006_push_tokens.sql`](../supabase/migrations/0006_push_tokens.sql) (push alerts, see `docs/PUSH.md`).
 9. Once more with [`supabase/migrations/0007_referrals_wallet.sql`](../supabase/migrations/0007_referrals_wallet.sql). This adds referral codes, wallets and credit on trips and passes. Rules are edited in **Admin → Referrals**.
+10. Once more with [`supabase/migrations/0008_saved_routes.sql`](../supabase/migrations/0008_saved_routes.sql). This adds saved routes (Account → Saved routes, and a quick list on the booking screen).
 
 Check: **Table Editor** in the sidebar now lists `drivers`, `jobs`, `profiles`, `settings` and a few more.
 

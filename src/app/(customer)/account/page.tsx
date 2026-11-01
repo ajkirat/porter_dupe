@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useUser } from "@/components/UserContext";
+import SavedRoutes from "@/components/SavedRoutes";
 import WalletCard from "@/components/WalletCard";
 import { APP_NAME } from "@/lib/brand";
 import { supabase } from "@/lib/supabase";
@@ -19,6 +20,7 @@ export default function AccountPage() {
         <p className="text-xs uppercase tracking-wide text-stone-500">Signed in as</p>
         <p className="mt-1 text-lg font-semibold">{phone}</p>
       </div>
+      <SavedRoutes />
       <WalletCard />
       {DRIVER_APP_URL && (
         <a href={DRIVER_APP_URL} className="block rounded-2xl border border-stone-200 p-4 active:bg-stone-50">

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import ContactButton from "@/components/ContactButton";
 import { BackIcon, BikeIcon, LocateIcon } from "@/components/icons";
 import Map, { type MapFocus, type MapMarker } from "@/components/Map";
 import PlaceSearch from "@/components/PlaceSearch";
@@ -11,6 +12,7 @@ import { computeFare, DEFAULT_FARE, formatKm, formatMinutes, type FareSettings }
 import { BENGALURU, getRoute, reverseGeocode, type LatLng, type Place, type Route } from "@/lib/geo";
 import { isValidIndianMobile, toE164 } from "@/lib/phone";
 import { errorText, supabase } from "@/lib/supabase";
+import { defaultRouteLabel, PENDING_ROUTE_KEY, type SavedRoute } from "@/lib/routes";
 import type { Job } from "@/lib/types";
 
 type Field = "pickup" | "drop";
@@ -40,6 +42,8 @@ export default function HomePage() {
     payment_mode: "cash",
     pay_at: "drop",
   });
+  const [saved, setSaved] = useState<SavedRoute[]>([]);
+  const [saveRoute, setSaveRoute] = useState(false);
   const [wallet, setWallet] = useState(0);
   const [walletPct, setWalletPct] = useState(50);
   const [useWallet, setUseWallet] = useState(true);
@@ -77,6 +81,28 @@ export default function HomePage() {
       .then(({ data }) => data && setFareSettings(data));
   }, []);
 
+  // Saved routes. If the person tapped "Book" on one in Account, start from it. Fails quietly before migration 0008.
+  useEffect(() => {
+    supabase()
+      .from("saved_routes")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        const list = (data as SavedRoute[]) ?? [];
+        setSaved(list);
+        try {
+          const id = sessionStorage.getItem(PENDING_ROUTE_KEY);
+          if (id) {
+            sessionStorage.removeItem(PENDING_ROUTE_KEY);
+            const r = list.find((x) => x.id === id);
+            if (r) applyRoute(r);
+          }
+        } catch {}
+      });
+    // Runs once on open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Wallet credit (from referrals). Both calls fail quietly if the wallet migration has not been applied yet.
   useEffect(() => {
     const sb = supabase();
@@ -106,6 +132,22 @@ export default function HomePage() {
     setOverlay(null);
     setError("");
     flyTo(place);
+  }
+
+  // Fill pickup, drop and the usual parcel details from a saved route.
+  function applyRoute(r: SavedRoute) {
+    setPickup({ lat: r.pickup_lat, lng: r.pickup_lng, label: r.pickup_address });
+    setDrop({ lat: r.drop_lat, lng: r.drop_lng, label: r.drop_address });
+    setForm((f) => ({
+      ...f,
+      item_note: r.item_note ?? f.item_note,
+      receiver_name: r.receiver_name ?? f.receiver_name,
+      receiver_phone: r.receiver_phone ?? f.receiver_phone,
+      pickup_contact_name: r.pickup_contact_name ?? f.pickup_contact_name,
+      pickup_contact_phone: r.pickup_contact_phone ?? f.pickup_contact_phone,
+    }));
+    setError("");
+    flyTo({ lat: r.pickup_lat, lng: r.pickup_lng });
   }
 
   function startPick(field: Field) {
@@ -141,6 +183,23 @@ export default function HomePage() {
     });
     setBusy(false);
     if (error) return setError(errorText(error));
+    if (saveRoute) {
+      // A failure here must not get in the way of the booking that just went through.
+      await supabase().from("saved_routes").insert({
+        label: defaultRouteLabel(pickup.label, drop.label),
+        pickup_address: pickup.label,
+        pickup_lat: pickup.lat,
+        pickup_lng: pickup.lng,
+        drop_address: drop.label,
+        drop_lat: drop.lat,
+        drop_lng: drop.lng,
+        receiver_name: form.receiver_name.trim() || null,
+        receiver_phone: form.receiver_phone.trim() || null,
+        pickup_contact_name: form.pickup_contact_name.trim() || null,
+        pickup_contact_phone: form.pickup_contact_phone.trim() || null,
+        item_note: form.item_note.trim() || null,
+      });
+    }
     router.push(`/orders/${(data as Job).id}`);
   }
 
@@ -219,6 +278,19 @@ export default function HomePage() {
             <LocationRow dot="bg-red-600 rounded-[3px]" hint="Drop" value={drop?.label} empty="Where to deliver?" onClick={() => setOverlay({ kind: "search", field: "drop" })} />
           </div>
 
+          {saved.length > 0 && !(pickup && drop) && (
+            <div className="mt-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Saved routes</p>
+              <div className="mt-1 flex gap-2 overflow-x-auto pb-1">
+                {saved.map((r) => (
+                  <button key={r.id} type="button" className="shrink-0 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm" onClick={() => applyRoute(r)}>
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {route && fare !== null && (
             <div className="mt-4 space-y-3">
               <div className="flex items-center gap-3 rounded-2xl border-2 border-brand bg-orange-50 p-3">
@@ -266,6 +338,7 @@ export default function HomePage() {
                 <input className="input" inputMode="numeric" placeholder="10 digits" {...field("receiver_phone")} />
               </label>
             </div>
+            <ContactButton onPick={(c) => setForm((f) => ({ ...f, receiver_name: c.name || f.receiver_name, receiver_phone: c.phone }))} />
             <details className="text-sm">
               <summary className="cursor-pointer py-1 text-stone-600">Someone else hands over the parcel?</summary>
               <div className="mt-2 grid grid-cols-2 gap-3">
@@ -278,6 +351,7 @@ export default function HomePage() {
                   <input className="input" inputMode="numeric" {...field("pickup_contact_phone")} />
                 </label>
               </div>
+              <ContactButton onPick={(c) => setForm((f) => ({ ...f, pickup_contact_name: c.name || f.pickup_contact_name, pickup_contact_phone: c.phone }))} />
             </details>
             <div>
               <p className="label">Who pays the driver?</p>
@@ -317,6 +391,10 @@ export default function HomePage() {
               </div>
               <p className="mt-1 text-xs text-stone-500">You pay the driver directly, {form.pay_at === "pickup" ? "when they collect the parcel" : "when the parcel is delivered"}. Pikop never handles the money.{discount > 0 && ` Your wallet credit lowers what you pay the driver to ₹${(fare ?? 0) - discount}.`}</p>
             </div>
+            <label className="flex items-center gap-2 text-sm text-stone-700">
+              <input type="checkbox" className="h-4 w-4" checked={saveRoute} onChange={(e) => setSaveRoute(e.target.checked)} />
+              Save this route for next time
+            </label>
             {wallet > 0 && (
               <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-green-600 bg-green-50 p-3 text-sm">
                 <span>

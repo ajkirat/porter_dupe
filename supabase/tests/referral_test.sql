@@ -238,4 +238,20 @@ do $$ begin
   assert (select sum(amount_rupees) from public.wallet_entries where user_id = '00000000-0000-0000-0000-00000000000d' and wallet = 'driver') = 0, 'ledger mismatch';
 end $$;
 
+-- Saved routes: private to their owner, capped at 20.
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
+insert into public.saved_routes (label, pickup_address, pickup_lat, pickup_lng, drop_address, drop_lat, drop_lng)
+values ('Shop to home', 'A', 12.9, 77.6, 'B', 12.95, 77.65);
+do $$ begin assert (select count(*) from public.saved_routes) = 1, 'owner should see their route'; end $$;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a2');
+do $$ begin assert (select count(*) from public.saved_routes) = 0, 'routes leaked to another user'; end $$;
+select pg_temp.expect_error($$insert into public.saved_routes (user_id, label, pickup_address, pickup_lat, pickup_lng, drop_address, drop_lat, drop_lng) values ('00000000-0000-0000-0000-0000000000a1', 'x', 'A', 1, 1, 'B', 2, 2)$$, 'row-level security');
+do $$ begin
+  for i in 1..20 loop
+    insert into public.saved_routes (label, pickup_address, pickup_lat, pickup_lng, drop_address, drop_lat, drop_lng)
+    values ('r' || i, 'A', 12.9, 77.6, 'B', 12.95, 77.65);
+  end loop;
+end $$;
+select pg_temp.expect_error($$insert into public.saved_routes (label, pickup_address, pickup_lat, pickup_lng, drop_address, drop_lat, drop_lng) values ('21st', 'A', 1, 1, 'B', 2, 2)$$, 'up to 20');
+
 \echo 'REFERRAL CHECKS PASSED'
