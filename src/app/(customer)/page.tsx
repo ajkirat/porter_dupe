@@ -347,7 +347,7 @@ export default function HomePage() {
                   <input className="input" inputMode="numeric" {...field("pickup_contact_phone")} />
                 </label>
               </div>
-              <ContactButton onPick={(c) => setForm((f) => ({ ...f, pickup_contact_name: c.name || f.pickup_contact_name, pickup_contact_phone: c.phone }))} />
+              <ContactButton field="pickup" onPick={(c) => setForm((f) => ({ ...f, pickup_contact_name: c.name || f.pickup_contact_name, pickup_contact_phone: c.phone }))} />
             </details>
             <p className="text-xs text-stone-500">You pay the driver directly, by cash, UPI or QR once the parcel is delivered. Pikop never handles the money.{discount > 0 && ` Your wallet credit lowers what you pay the driver to ₹${(fare ?? 0) - discount}.`}</p>
             <label className="flex items-center gap-2 text-sm text-stone-700">
