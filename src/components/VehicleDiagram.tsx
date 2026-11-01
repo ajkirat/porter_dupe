@@ -8,7 +8,6 @@ const WHEEL = "#292524";
 const ACCENT = "#ea580c";
 const CAB = "#e0f2fe";
 const GLASS = "#7dd3fc";
-const LOAD = "rgba(254,215,170,0.7)";
 
 // Truck-like bodies: cab length, cab roof height, floor height of the load area, wheel radius (all cm).
 const BODY: Record<string, { cab: number; cabH: number; floor: number; r: number }> = {
@@ -44,14 +43,12 @@ export default function VehicleDiagram({ v, code = "tata_ace", className = "" }:
   const kFit = Math.min(area(totalL, topZ, W).w, area(totalL, topZ, W).h);
   const k = Math.min(kRef, kFit);
 
-  const X0 = 138; // left edge of the load area
-  const sideTop = 34;
+  const X0 = 168; // left edge of the load area
+  const sideTop = 34 + 0.35 * W * k; // room above for the box depth and the length line
   const G = sideTop + topZ * k; // ground line
-  const topY = G + 46; // top view starts below the ground line
   const sx = (x: number) => X0 + x * k;
   const sz = (z: number) => G - z * k;
   const pts = (list: [number, number][]) => list.map(([x, z]) => `${sx(x).toFixed(1)},${sz(z).toFixed(1)}`).join(" ");
-  const H_VIEW = topY + W * k + 24;
 
   const wheel = (xc: number, r: number, key: string) => (
     <g key={key}>
@@ -82,30 +79,20 @@ export default function VehicleDiagram({ v, code = "tata_ace", className = "" }:
     </g>
   );
 
-  const loadArea = (
-    <g>
-      <polygon points={pts([[0, floor], [L, floor], [L, floor + H], [0, floor + H]])} fill={LOAD} stroke={INK} strokeWidth={1.3} />
-      <line x1={sx(0)} y1={sz(floor + H)} x2={sx(L)} y2={sz(floor + H)} stroke={INK} strokeWidth={1.3} strokeDasharray="4 3" />
-    </g>
-  );
-
-  // Where the Length and Height lines go: on the data load area, or on the photo's bed.
-  let lenLine = { x1: sx(0), x2: sx(L), y: sz(floor + H) - 14 };
-  let hgtLine = { x: sx(0) - 14, y1: sz(floor), y2: sz(floor + H) };
+  // The load area as a 3D box (front face, top and left side) drawn over the vehicle, so length, width and height show together.
+  // rect = its front face in screen px; the depth (width) recedes up and to the left at half scale.
+  let rect = { xl: sx(0), xr: sx(L), yt: sz(floor + H), yb: sz(floor) };
 
   let body: React.ReactNode;
   if (photo) {
     const sc = k / photo.pxPerCm; // screen px per photo px
     const left = sx(0) - photo.bed.x0 * sc;
     const top = G - photo.ground * sc;
-    const pp = (x: number, y: number) => `${(left + x * sc).toFixed(1)},${(top + y * sc).toFixed(1)}`;
     const { x0, x1, top: bt, floor: bf } = photo.bed;
-    lenLine = { x1: left + x0 * sc, x2: left + x1 * sc, y: top - 2 };
-    hgtLine = { x: left + x0 * sc - 14, y1: top + bt * sc, y2: top + bf * sc };
+    rect = { xl: left + x0 * sc, xr: left + x1 * sc, yt: top + bt * sc, yb: top + bf * sc };
     body = (
       <g>
         <image href={photo.src} x={left} y={top} width={photo.w * sc} height={photo.h * sc} />
-        <polygon points={[pp(x0, bt), pp(x1, bt - 3), pp(x1, bf - 2), pp(x0, bf + 3)].join(" ")} fill="rgba(251,146,60,0.28)" stroke={ACCENT} strokeWidth={1.2} />
       </g>
     );
   } else if (bike) {
@@ -114,7 +101,6 @@ export default function VehicleDiagram({ v, code = "tata_ace", className = "" }:
     body = (
       <g>
         <image href={BIKE_PHOTO.src} x={left} y={G - w * BIKE_PHOTO.aspect + w * 0.03} width={w} height={w * BIKE_PHOTO.aspect} />
-        {loadArea}
       </g>
     );
   } else {
@@ -141,26 +127,42 @@ export default function VehicleDiagram({ v, code = "tata_ace", className = "" }:
         />
         {wheel(rearWheel, b.r, "wr")}
         {wheel(frontWheel, b.r, "wf")}
-        {loadArea}
       </g>
     );
   }
 
-  const [lx0, lx1] = [sx(0), sx(L)];
+  // Depth of the box. Width is drawn at half scale, receding up-left at 45 degrees (cabinet projection).
+  const d = 0.35 * W * k;
+  const { xl, xr, yt, yb } = rect;
+  const P = (x: number, y: number) => `${x.toFixed(1)},${y.toFixed(1)}`;
+  const box = (
+    <g strokeLinejoin="round">
+      <polygon points={[P(xl, yt), P(xr, yt), P(xr - d, yt - d), P(xl - d, yt - d)].join(" ")} fill="rgba(251,146,60,0.18)" stroke={ACCENT} strokeWidth={1.2} />
+      <polygon points={[P(xl, yt), P(xl, yb), P(xl - d, yb - d), P(xl - d, yt - d)].join(" ")} fill="rgba(251,146,60,0.38)" stroke={ACCENT} strokeWidth={1.2} />
+      <polygon points={[P(xl, yt), P(xr, yt), P(xr, yb), P(xl, yb)].join(" ")} fill="rgba(251,146,60,0.26)" stroke={ACCENT} strokeWidth={1.4} />
+    </g>
+  );
+  const slant = (x1: number, y1: number, x2: number, y2: number, label: string) => (
+    <g>
+      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={ACCENT} strokeWidth={1.4} />
+      <circle cx={x1} cy={y1} r={2} fill={ACCENT} />
+      <circle cx={x2} cy={y2} r={2} fill={ACCENT} />
+      <text x={Math.min(x1, x2) - 6} y={(y1 + y2) / 2 + 14} textAnchor="end" fontSize={11} fontWeight={600} fill="#292524">
+        {label}
+      </text>
+    </g>
+  );
+  const o = 9; // how far the width line sits outside the box
+  const H_VIEW = G + 26;
+
   return (
     <svg viewBox={`0 0 460 ${Math.ceil(H_VIEW)}`} className={`w-full ${className}`} role="img" aria-label={`Load area ${ft(L)} long, ${ft(W)} wide, ${ft(H)} high (${sizeCm(v)})`}>
-      {/* ground */}
-      <line x1={20} y1={G} x2={400} y2={G} stroke="#a8a29e" strokeWidth={1} />
+      <line x1={20} y1={G} x2={440} y2={G} stroke="#a8a29e" strokeWidth={1} />
       {body}
-      {hDim(lenLine.x1, lenLine.x2, lenLine.y, `Length ${ft(L)} · ${L} cm`, "len")}
-      {vDim(hgtLine.x, hgtLine.y1, hgtLine.y2, `Height ${ft(H)} · ${H} cm`, "left", "hgt")}
-
-      {/* top view of the load area, same scale */}
-      <text x={lx0} y={topY - 8} fontSize={10} fill="#78716c">
-        Top view
-      </text>
-      <rect x={lx0} y={topY} width={L * k} height={W * k} fill={LOAD} stroke={INK} strokeWidth={1.3} />
-      {vDim(lx1 + 14, topY, topY + W * k, `Width ${ft(W)} · ${W} cm`, "right", "wid")}
+      {box}
+      {hDim(xl - d, xr - d, yt - d - 12, `Length ${ft(L)} · ${L} cm`, "len")}
+      {vDim(xl - d - 14, yt - d, yb - d, `Height ${ft(H)} · ${H} cm`, "left", "hgt")}
+      {slant(xl - o, yb + o, xl - d - o, yb - d + o, `Width ${ft(W)} · ${W} cm`)}
     </svg>
   );
 }
