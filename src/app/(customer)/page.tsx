@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import ContactButton from "@/components/ContactButton";
-import { BackIcon, BikeIcon, LocateIcon } from "@/components/icons";
+import { BackIcon, BikeIcon, LocateIcon, TruckIcon } from "@/components/icons";
 import Map, { type MapFocus, type MapMarker } from "@/components/Map";
 import PlaceSearch from "@/components/PlaceSearch";
 import Sheet from "@/components/Sheet";
 import { useUser } from "@/components/UserContext";
+import { BIKE_ONLY, capacity, sizeCm, sizeFeet, type VehicleType } from "@/lib/vehicles";
 import { computeFare, DEFAULT_FARE, formatKm, formatMinutes, type FareSettings } from "@/lib/fare";
 import { BENGALURU, getRoute, reverseGeocode, type LatLng, type Place, type Route } from "@/lib/geo";
 import { isValidIndianMobile, toE164 } from "@/lib/phone";
@@ -31,6 +32,8 @@ export default function HomePage() {
   const [focus, setFocus] = useState<MapFocus | null>(null);
   const [routed, setRouted] = useState<{ key: string; route: Route } | null>(null);
   const [fareSettings, setFareSettings] = useState<FareSettings>(DEFAULT_FARE);
+  const [vehicles, setVehicles] = useState<VehicleType[]>(BIKE_ONLY);
+  const [vehicleCode, setVehicleCode] = useState("bike");
   const [pickCenter, setPickCenter] = useState<LatLng | null>(null);
   const [pickLabel, setPickLabel] = useState("");
   const [form, setForm] = useState({
@@ -77,6 +80,16 @@ export default function HomePage() {
       .select("base_fare, included_km, per_km, min_fare")
       .single()
       .then(({ data }) => data && setFareSettings(data));
+  }, []);
+
+  // Vehicle choices. Fails quietly (bike only) before migration 0013.
+  useEffect(() => {
+    supabase()
+      .from("vehicle_types")
+      .select("*")
+      .eq("active", true)
+      .order("sort_order")
+      .then(({ data }) => data && data.length > 0 && setVehicles(data as VehicleType[]));
   }, []);
 
   // Saved routes. If the person tapped "Book" on one in Account, start from it. Fails quietly before migration 0008.
@@ -176,6 +189,7 @@ export default function HomePage() {
       p_pickup_contact_name: form.pickup_contact_name.trim() || null,
       p_pickup_contact_phone: form.pickup_contact_phone ? toE164(form.pickup_contact_phone) : null,
       ...(discount > 0 ? { p_use_wallet: true } : {}),
+      ...(vehicleCode !== "bike" ? { p_vehicle_type: vehicleCode } : {}),
     });
     setBusy(false);
     if (error) return setError(errorText(error));
@@ -205,7 +219,9 @@ export default function HomePage() {
     if (pickup) markers.push({ pos: pickup, label: "Pickup", kind: "pickup" });
     if (drop) markers.push({ pos: drop, label: "Drop", kind: "drop" });
   }
-  const fare = route ? computeFare(route.distanceM, fareSettings) : null;
+  const vehicle = vehicles.find((v) => v.code === vehicleCode) ?? vehicles[0];
+  const rates = (v: VehicleType): FareSettings => (v.code === "bike" ? fareSettings : v);
+  const fare = route ? computeFare(route.distanceM, rates(vehicle)) : null;
   // Same rule as the server: credit covers at most walletPct% of the fare.
   const discount = fare !== null && useWallet ? Math.max(0, Math.min(wallet, Math.floor((fare * walletPct) / 100))) : 0;
   const field = (k: keyof typeof form) => ({
@@ -289,16 +305,32 @@ export default function HomePage() {
 
           {route && fare !== null && (
             <div className="mt-4 space-y-3">
-              <div className="flex items-center gap-3 rounded-2xl border-2 border-brand bg-orange-50 p-3">
-                <BikeIcon className="h-9 w-9 text-brand" />
-                <div className="flex-1">
-                  <p className="font-semibold">Bike</p>
-                  <p className="text-xs text-stone-600">
-                    {formatKm(route.distanceM)} · about {formatMinutes(route.durationS)}
-                    {route.approximate && " · estimate"}
-                  </p>
-                </div>
-                <p className="text-2xl font-bold">₹{fare}</p>
+              <p className="text-xs text-stone-500">
+                {formatKm(route.distanceM)} · about {formatMinutes(route.durationS)}
+                {route.approximate && " · estimate"}
+              </p>
+              <div className="space-y-2">
+                {vehicles.map((v) => {
+                  const on = v.code === vehicle.code;
+                  const Icon = v.code === "bike" ? BikeIcon : TruckIcon;
+                  return (
+                    <button
+                      key={v.code}
+                      type="button"
+                      onClick={() => setVehicleCode(v.code)}
+                      className={`flex w-full items-center gap-3 rounded-2xl border-2 p-3 text-left ${on ? "border-brand bg-orange-50" : "border-stone-200"}`}
+                    >
+                      <Icon className={`h-9 w-9 shrink-0 ${on ? "text-brand" : "text-stone-500"}`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold">{v.name}</p>
+                        <p className="text-xs text-stone-600">{capacity(v)} · {sizeFeet(v)}</p>
+                        <p className="text-xs text-stone-400">{sizeCm(v)}</p>
+                        {on && v.description && <p className="mt-0.5 text-xs text-stone-600">{v.description}</p>}
+                      </div>
+                      <p className="text-xl font-bold">₹{computeFare(route.distanceM, rates(v))}</p>
+                    </button>
+                  );
+                })}
               </div>
               <button className="btn btn-primary w-full py-3.5 text-base" onClick={() => setStep("details")}>
                 Continue
@@ -367,7 +399,7 @@ export default function HomePage() {
             )}
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button className="btn btn-primary w-full py-3.5 text-base" disabled={!detailsValid || busy}>
-              {busy ? "Booking…" : `Book Bike · ₹${(fare ?? 0) - discount}`}
+              {busy ? "Booking…" : `Book ${vehicle.name} · ₹${(fare ?? 0) - discount}`}
             </button>
           </form>
         </Sheet>

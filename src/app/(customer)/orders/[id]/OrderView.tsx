@@ -31,6 +31,7 @@ export default function OrderView() {
   const [job, setJob] = useState<Job | null>(null);
   const [secrets, setSecrets] = useState<Secrets | null>(null);
   const [driver, setDriver] = useState<Driver | null>(null);
+  const [vehicleName, setVehicleName] = useState("");
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sheetH, setSheetH] = useState(340);
@@ -44,6 +45,7 @@ export default function OrderView() {
     const { data: j } = await sb.from("jobs").select("*").eq("id", id).maybeSingle();
     if (!j) return setNotFound(true);
     setJob(j);
+    sb.from("vehicle_types").select("name").eq("code", j.vehicle_type).maybeSingle().then(({ data }) => setVehicleName(data?.name ?? ""));
     if (j.driver_id && j.status !== "assigned") {
       const { data: d } = await sb.from("drivers").select("*").eq("id", j.driver_id).maybeSingle();
       setDriver(d);
@@ -230,7 +232,7 @@ export default function OrderView() {
             {job.drop_address}
           </p>
           <p className="pt-1 text-xs text-stone-500">
-            {formatKm(job.distance_m)} · ₹{job.fare_rupees - (job.wallet_discount ?? 0)} to the driver · receiver {job.receiver_name}
+            {vehicleName && `${vehicleName} · `}{formatKm(job.distance_m)} · ₹{job.fare_rupees - (job.wallet_discount ?? 0)} to the driver · receiver {job.receiver_name}
           </p>
         </div>
 

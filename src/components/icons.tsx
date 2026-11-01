@@ -71,6 +71,13 @@ export const BikeIcon = (p: P) => (
     <path d="M5.5 16.5L9 9h5l4.5 7.5M9 9L7.5 6H5M14 9l-2 7.5" />
   </Svg>
 );
+export const TruckIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M2 6h11v9H2zM13 9h4l3 3v3h-7" />
+    <circle cx="6.5" cy="17" r="2" />
+    <circle cx="16.5" cy="17" r="2" />
+  </Svg>
+);
 export const PackageIcon = (p: P) => (
   <Svg {...p}>
     <path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8" />

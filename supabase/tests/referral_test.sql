@@ -340,6 +340,33 @@ select pg_temp.expect_error($$select public.customer_mark_paid((select id from t
 select public.customer_mark_paid((select id from t_jpayx), 'upi');
 do $$ begin assert (select paid_via from public.jobs where id = (select id from t_jpayx)) = 'upi', 'paid_via not saved'; end $$;
 
+-- Vehicle types: own fare, and a job reaches only drivers with that vehicle.
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a6');
+do $$ begin
+  assert public.compute_fare(10000, 'tata_ace') = 220 + 8 * 22, 'tata ace fare';
+  assert public.compute_fare(10000, 'bike') = public.compute_fare(10000), 'bike fare unchanged';
+end $$;
+select pg_temp.expect_error($$select public.compute_fare(5000, 'rocket')$$, 'not available');
+create temp table t_jveh as
+  select * from public.create_job('Koramangala', 12.9352, 77.6245, 'Indiranagar', 12.9784, 77.6408, 'Meera', '+919000000009', 5000, 900, p_vehicle_type => 'tata_ace');
+grant select on t_jveh to authenticated;
+do $$ begin assert (select fare_rupees from t_jveh) = public.compute_fare(5000, 'tata_ace') or (select fare_rupees from t_jveh) >= 220, 'job fare uses vehicle'; end $$;
+reset role;
+update public.drivers set is_online = true, last_lat = 12.9352, last_lng = 77.6245 where id = '00000000-0000-0000-0000-0000000000a4';
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a4');
+do $$ begin
+  assert not exists (select 1 from public.driver_open_jobs(12.9352, 77.6245) where id = (select id from t_jveh)), 'bike driver must not see a Tata Ace job';
+end $$;
+select pg_temp.expect_error($$select public.accept_job((select id from t_jveh))$$, 'no longer available');
+reset role;
+update public.drivers set vehicle_type = 'tata_ace' where id = '00000000-0000-0000-0000-0000000000a4';
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a4');
+do $$ begin
+  assert exists (select 1 from public.driver_open_jobs(12.9352, 77.6245) where id = (select id from t_jveh)), 'Tata Ace driver should see it';
+end $$;
+
 -- Account deletion: blocked with an open trip; otherwise blanks the person, keeps the trip, disables the login.
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000a2');
 create temp table t_jdel as
