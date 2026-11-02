@@ -16,3 +16,16 @@ export function upiLink(opts: { vpa: string; name: string; rupees: number; note:
   // URLSearchParams encodes spaces as "+", which some UPI apps show literally.
   return `upi://pay?${q.toString().replace(/\+/g, "%20")}`;
 }
+
+// Open one specific UPI app. The generic upi:// link is also claimed by WhatsApp on many phones, so people end up there.
+// Each app has its own address that only it handles. An app that isn't installed simply does nothing, so we offer all of them.
+export function upiAppLinks(opts: { vpa: string; name: string; rupees: number; note: string }, ios = false): { id: string; label: string; href: string }[] {
+  const generic = upiLink(opts);
+  const query = generic.slice(generic.indexOf("?"));
+  return [
+    { id: "gpay", label: "Google Pay", href: `${ios ? "gpay://upi/pay" : "tez://upi/pay"}${query}` },
+    { id: "phonepe", label: "PhonePe", href: `phonepe://pay${query}` },
+    { id: "paytm", label: "Paytm", href: `paytmmp://pay${query}` },
+    { id: "other", label: "Other UPI app", href: generic },
+  ];
+}

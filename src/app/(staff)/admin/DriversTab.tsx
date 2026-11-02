@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { errorText, supabase } from "@/lib/supabase";
-import { upiLink, validVpa } from "@/lib/upi";
+import { upiAppLinks, validVpa } from "@/lib/upi";
 import { KYC_DOCS, type Driver, type DriverPass, type KycStatus } from "@/lib/types";
 
 // KYC review and pass management.
@@ -67,7 +67,10 @@ export default function DriversTab({
     if (!validVpa(d.upi_id)) return alert(`${d.full_name} has no valid UPI ID on file.`);
     const rupees = Math.trunc(Number(prompt(`Pay ${d.full_name} (${d.upi_id}) how many ₹?`, "100")));
     if (!rupees || rupees < 1) return;
-    window.location.href = upiLink({ vpa: d.upi_id, name: d.full_name, rupees, note: `Pikop ${d.driver_code ?? ""}`.trim() });
+    const apps = upiAppLinks({ vpa: d.upi_id, name: d.full_name, rupees, note: `Pikop ${d.driver_code ?? ""}`.trim() }, /iPhone|iPad/i.test(navigator.userAgent));
+    const pick = Math.trunc(Number(prompt("Open which app? 1 = Google Pay, 2 = PhonePe, 3 = Paytm, 4 = other", "1")));
+    const app = apps[pick - 1];
+    if (app) window.location.href = app.href;
   }
 
   return (

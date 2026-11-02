@@ -3,7 +3,7 @@
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 import { errorText, supabase } from "@/lib/supabase";
-import { upiLink, validVpa } from "@/lib/upi";
+import { upiAppLinks, upiLink, validVpa } from "@/lib/upi";
 import type { Driver, Job } from "@/lib/types";
 
 type Via = "cash" | "upi" | "qr";
@@ -21,7 +21,9 @@ export default function PayCard({ job, driver, onChange }: { job: Job; driver: D
   const [error, setError] = useState("");
   const due = job.fare_rupees - (job.wallet_discount ?? 0);
   const vpa = driver && validVpa(driver.upi_id) ? driver.upi_id : null;
-  const link = vpa && driver ? upiLink({ vpa, name: driver.full_name, rupees: due, note: `Pikop order ${job.id.slice(0, 6)}` }) : "";
+  const pay = vpa && driver ? { vpa, name: driver.full_name, rupees: due, note: `Pikop order ${job.id.slice(0, 6)}` } : null;
+  const link = pay ? upiLink(pay) : "";
+  const ios = typeof navigator !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   useEffect(() => {
     if (tab !== "qr" || !link) return;
@@ -65,10 +67,16 @@ export default function PayCard({ job, driver, onChange }: { job: Job; driver: D
         {noVpa && <p className="text-stone-700">This driver has not added a valid UPI ID. Please pay in cash.</p>}
         {tab === "upi" && link && (
           <>
-            <a href={link} className="btn btn-primary w-full">
-              Pay ₹{due} with GPay, PhonePe or Paytm
-            </a>
-            <p className="mt-2 text-xs text-stone-500">Check that your UPI app shows {driver?.full_name} before you confirm. On a computer, scan the QR code instead.</p>
+            <p className="mb-2 font-medium">Pay ₹{due} with your UPI app</p>
+            <div className="grid grid-cols-2 gap-2">
+              {pay &&
+                upiAppLinks(pay, ios).map((a, i) => (
+                  <a key={a.id} href={a.href} className={`btn ${i === 0 ? "btn-primary" : ""}`}>
+                    {a.label}
+                  </a>
+                ))}
+            </div>
+            <p className="mt-2 text-xs text-stone-500">Pick the app you use. If nothing opens, that app isn&apos;t installed: try another, or use the QR tab. Check that it shows {driver?.full_name} before you confirm.</p>
           </>
         )}
         {tab === "qr" && link && (
