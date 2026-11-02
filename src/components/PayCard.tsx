@@ -6,6 +6,7 @@ import { errorText, supabase } from "@/lib/supabase";
 import { upiAppLinks, upiLink, validVpa } from "@/lib/upi";
 import type { Driver, Job } from "@/lib/types";
 import { useT } from "@/i18n";
+import { play } from "@/lib/sound";
 
 type Via = "cash" | "upi" | "qr";
 const TABS: { v: Via; l: string }[] = [
@@ -41,7 +42,11 @@ export default function PayCard({ job, driver, onChange }: { job: Job; driver: D
     setError("");
     const { error: e } = await supabase().rpc("customer_mark_paid", { p_job: job.id, p_via: via });
     setBusy(false);
-    if (e) return setError(errorText(e));
+    if (e) {
+      play("error");
+      return setError(errorText(e));
+    }
+    play("cash");
     onChange();
   }
 

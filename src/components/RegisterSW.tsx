@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import "@/lib/sound"; // registers the first-tap audio unlock
 
 // A pass-through service worker; its presence lets browsers offer "Install app".
 export default function RegisterSW() {

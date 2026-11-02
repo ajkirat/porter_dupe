@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BackIcon, CheckIcon, PhoneIcon, ShareIcon } from "@/components/icons";
+import { BackIcon, PhoneIcon, ShareIcon } from "@/components/icons";
 import PayCard from "@/components/PayCard";
 import ReceiptButton from "@/components/ReceiptButton";
 import SupportCard from "@/components/SupportCard";
@@ -14,6 +14,8 @@ import { formatKm, formatMinutes } from "@/lib/fare";
 import { getRoute } from "@/lib/geo";
 import { errorText, supabase } from "@/lib/supabase";
 import { type Driver, type Job, type JobStatus } from "@/lib/types";
+import SuccessBurst from "@/components/SuccessBurst";
+import { play, type Cue } from "@/lib/sound";
 
 type Secrets = { pickup_otp: string; drop_otp: string };
 
@@ -113,6 +115,17 @@ export default function OrderView() {
     );
   }, [driverLat, driverLng, status, job]);
 
+  // Sound for the moments that matter: driver found, driver at the door, parcel picked up, delivered, cancelled.
+  const stage = job ? (job.status === "accepted" && job.driver_arrived_at ? "arrived" : job.status) : null;
+  const lastStage = useRef<string | null>(null);
+  useEffect(() => {
+    if (!stage) return;
+    const prev = lastStage.current;
+    lastStage.current = stage;
+    if (prev === null || prev === stage) return;
+    play(({ accepted: "confirm", arrived: "arrive", picked_up: "confirm", delivered: "success", cancelled: "cancel" } as Record<string, Cue>)[stage] ?? "ok");
+  }, [stage]);
+
   if (notFound) return <p className="p-6 text-stone-500">{t("Order not found.")}</p>;
   if (!job) return <p className="p-6 text-stone-500">{t("Loading…")}</p>;
 
@@ -144,8 +157,10 @@ export default function OrderView() {
   async function cancel() {
     if (!confirm(t("Cancel this delivery?"))) return;
     const { error } = await supabase().rpc("cancel_job", { p_job: id, p_reason: "cancelled by customer" });
-    if (error) setError(errorText(error));
-    else load();
+    if (error) {
+      setError(errorText(error));
+      play("error");
+    } else load();
   }
 
   return (
@@ -193,7 +208,7 @@ export default function OrderView() {
 
         {job.status === "delivered" && (
           <div className="mt-4 flex items-center gap-3 rounded-2xl bg-green-50 p-4 text-green-800">
-            <CheckIcon className="h-8 w-8" />
+            <SuccessBurst className="h-14 w-14 shrink-0" />
             <p className="text-sm">
               {t("Delivered. Please pay the driver ₹{amount} below.", { amount: job.fare_rupees - (job.wallet_discount ?? 0) })}
             </p>

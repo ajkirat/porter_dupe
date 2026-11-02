@@ -5,6 +5,7 @@ import { APP_NAME } from "@/lib/brand";
 import { errorText, supabase } from "@/lib/supabase";
 import type { ReferralItem, WalletEntry } from "@/lib/types";
 import { useT } from "@/i18n";
+import { play } from "@/lib/sound";
 
 const LABEL: Record<string, string> = {
   referral_welcome: "Welcome credit",
@@ -55,8 +56,11 @@ export default function WalletCard() {
     setBusy(true);
     setMsg(null);
     const { data, error } = await supabase().rpc("apply_referral_code", { p_code: apply, p_wallet: "customer" });
-    if (error) setMsg({ ok: false, text: errorText(error) });
-    else {
+    if (error) {
+      setMsg({ ok: false, text: errorText(error) });
+      play("error");
+    } else {
+      play("success");
       setMsg({ ok: true, text: t("Code added. ₹{amount} is now in your wallet.", { amount: Number(data ?? 0) }) });
       setApply("");
       await load();

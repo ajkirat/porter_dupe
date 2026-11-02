@@ -17,6 +17,7 @@ import { isValidIndianMobile, toE164 } from "@/lib/phone";
 import { errorText, supabase } from "@/lib/supabase";
 import { defaultRouteLabel, PENDING_ROUTE_KEY, type SavedRoute } from "@/lib/routes";
 import type { Job } from "@/lib/types";
+import { play } from "@/lib/sound";
 
 type Field = "pickup" | "drop";
 type Overlay = { kind: "search" | "pick"; field: Field } | null;
@@ -196,7 +197,11 @@ export default function HomePage() {
       ...(vehicleCode !== "bike" ? { p_vehicle_type: vehicleCode } : {}),
     });
     setBusy(false);
-    if (error) return setError(errorText(error));
+    if (error) {
+      play("error");
+      return setError(errorText(error));
+    }
+    play("confirm");
     if (saveRoute) {
       // A failure here must not get in the way of the booking that just went through.
       await supabase().from("saved_routes").insert({

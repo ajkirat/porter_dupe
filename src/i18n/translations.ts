@@ -1,6 +1,8 @@
 // English text is the key. Hindi (hi) and Kannada (kn). Placeholders like {name} must be kept.
 // Please have a native speaker review these before launch.
 export const TRANSLATIONS: Record<string, { hi: string; kn: string }> = {
+  "Sounds": { hi: "आवाज़ें", kn: "ಶಬ್ದಗಳು" },
+  "Short tones and a buzz when something happens.": { hi: "कुछ होने पर छोटी आवाज़ और कंपन।", kn: "ಏನಾದರೂ ಆದಾಗ ಚಿಕ್ಕ ಶಬ್ದ ಮತ್ತು ಕಂಪನ." },
   "Send anything across Bengaluru by bike": { hi: "बेंगलुरु में कुछ भी बाइक से भेजें", kn: "ಬೆಂಗಳೂರಿನಲ್ಲಿ ಏನನ್ನಾದರೂ ಬೈಕ್‌ನಲ್ಲಿ ಕಳುಹಿಸಿ" },
   "Pick it up, drop it off, pay the driver directly. No hidden charges.": { hi: "उठाएं, पहुंचाएं, ड्राइवर को सीधे पैसे दें। कोई छुपा खर्च नहीं।", kn: "ತೆಗೆದುಕೊಳ್ಳಿ, ತಲುಪಿಸಿ, ಚಾಲಕರಿಗೆ ನೇರವಾಗಿ ಹಣ ಕೊಡಿ. ಯಾವುದೇ ಗುಪ್ತ ಶುಲ್ಕ ಇಲ್ಲ." },
   "Send": { hi: "भेजें", kn: "ಕಳುಹಿಸಿ" },

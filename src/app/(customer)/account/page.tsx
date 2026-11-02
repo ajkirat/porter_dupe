@@ -10,6 +10,7 @@ import { APP_NAME } from "@/lib/brand";
 import { supabase } from "@/lib/supabase";
 import { useT } from "@/i18n";
 import LanguagePicker from "@/i18n/LanguagePicker";
+import SoundToggle from "@/components/SoundToggle";
 
 const DRIVER_APP_URL = process.env.NEXT_PUBLIC_DRIVER_APP_URL;
 
@@ -26,6 +27,7 @@ export default function AccountPage() {
         <p className="text-xs uppercase tracking-wide text-stone-500">{t("Signed in as")}</p>
         <p className="mt-1 text-lg font-semibold">{phone}</p>
       </div>
+      <SoundToggle />
       <SavedRoutes />
       <WalletCard />
       {DRIVER_APP_URL && (
