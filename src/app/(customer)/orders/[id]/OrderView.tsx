@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BackIcon, CheckIcon, PhoneIcon, ShareIcon } from "@/components/icons";
 import PayCard from "@/components/PayCard";
+import ReceiptButton from "@/components/ReceiptButton";
+import SupportCard from "@/components/SupportCard";
 import Map, { type MapMarker } from "@/components/Map";
 import Sheet from "@/components/Sheet";
 import { formatKm, formatMinutes } from "@/lib/fare";
@@ -248,6 +250,7 @@ export default function OrderView() {
               Cancel delivery
             </button>
           )}
+          {job.status === "delivered" && <ReceiptButton job={job} vehicleName={vehicleName} driverName={driver?.full_name} />}
           {(job.status === "delivered" || job.status === "cancelled") && (
             <Link href="/" className="btn btn-primary py-3">
               Send another parcel
@@ -255,6 +258,9 @@ export default function OrderView() {
           )}
         </div>
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        <div className="mt-3">
+          <SupportCard />
+        </div>
       </Sheet>
     </div>
   );

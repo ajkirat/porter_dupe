@@ -1,6 +1,7 @@
 "use client";
 
 import { useUser } from "@/components/UserContext";
+import SupportCard from "@/components/SupportCard";
 import DeleteAccount from "@/components/DeleteAccount";
 import Link from "next/link";
 import SavedRoutes from "@/components/SavedRoutes";
@@ -36,6 +37,7 @@ export default function AccountPage() {
       <button className="btn w-full py-3" onClick={() => supabase().auth.signOut()}>
         Sign out
       </button>
+      <SupportCard />
       <DeleteAccount />
       <p className="text-center text-xs text-stone-400">
         <Link href="/terms" className="underline">Terms</Link> · <Link href="/privacy" className="underline">Privacy policy</Link>

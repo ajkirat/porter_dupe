@@ -29,6 +29,7 @@ export default function HomePage() {
   const [pickup, setPickup] = useState<Place | null>(null);
   const [drop, setDrop] = useState<Place | null>(null);
   const [overlay, setOverlay] = useState<Overlay>(null);
+  const [agreed, setAgreed] = useState(false);
   const [step, setStep] = useState<"where" | "details">("where");
   const [focus, setFocus] = useState<MapFocus | null>(null);
   const [routed, setRouted] = useState<{ key: string; route: Route } | null>(null);
@@ -403,8 +404,15 @@ export default function HomePage() {
                 <input type="checkbox" className="h-5 w-5" checked={useWallet} onChange={(e) => setUseWallet(e.target.checked)} />
               </label>
             )}
+            <label className="flex items-start gap-2 rounded-xl bg-stone-50 p-3 text-xs text-stone-600">
+              <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+              <span>
+                Pikop connects you with a driver and is not responsible for the parcel. I am not sending anything that would need a police
+                complaint if it were lost or damaged{vehicle.code === "bike" ? `, and it weighs up to ${vehicle.max_kg} kg` : ""}.
+              </span>
+            </label>
             {error && <p className="text-sm text-red-600">{error}</p>}
-            <button className="btn btn-primary w-full py-3.5 text-base" disabled={!detailsValid || busy}>
+            <button className="btn btn-primary w-full py-3.5 text-base" disabled={!detailsValid || busy || !agreed}>
               {busy ? "Booking…" : `Book ${vehicle.name} · ₹${(fare ?? 0) - discount}`}
             </button>
           </form>
