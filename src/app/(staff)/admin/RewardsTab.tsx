@@ -19,11 +19,13 @@ const KIND: Record<string, string> = {
 };
 
 const NUMBERS: { key: keyof RewardSettings; label: string; hint?: string }[] = [
-  { key: "referral_driver_reward", label: "Driver referral reward (₹)", hint: "Paid to the referring driver" },
+  { key: "referral_driver_reward", label: "Driver referral reward (₹)", hint: "Fee credit for the referring driver" },
+  { key: "referral_driver_trips", label: "Referred driver must finish (trips)", hint: "Reward is paid after this many deliveries" },
+  { key: "referral_customer_trips", label: "Referred customer must have (deliveries)", hint: "Reward goes to the driver who referred them" },
   { key: "referral_customer_welcome", label: "New customer credit (₹)", hint: "Given to the new customer when they add a code" },
-  { key: "referral_customer_reward", label: "Customer referral reward (₹)", hint: "Paid to the referring customer" },
-  { key: "referral_max_driver", label: "Max paid referrals per driver" },
-  { key: "referral_max_customer", label: "Max paid referrals per customer" },
+  { key: "referral_customer_reward", label: "Reward for referring a customer (₹)", hint: "Paid to the referring DRIVER. Customers earn nothing for referring." },
+  { key: "referral_max_driver", label: "Max paid driver referrals per month" },
+  { key: "referral_max_customer", label: "Max paid customer referrals per month" },
   { key: "referral_min_trip_m", label: "First trip must be at least (metres)", hint: "Shorter trips do not count" },
   { key: "referral_min_fare", label: "First trip fare must be at least (₹)" },
   { key: "wallet_max_percent", label: "Wallet can cover at most (% of a fare)" },
@@ -44,7 +46,7 @@ export default function RewardsTab() {
   const load = useCallback(async () => {
     const sb = supabase();
     const [st, en, rf] = await Promise.all([
-      sb.from("settings").select("referral_driver_enabled, referral_customer_enabled, referral_driver_reward, referral_customer_reward, referral_customer_welcome, referral_max_driver, referral_max_customer, referral_min_trip_m, referral_min_fare, wallet_max_percent, wallet_expiry_days").single(),
+      sb.from("settings").select("referral_driver_trips, referral_customer_trips, referral_driver_enabled, referral_customer_enabled, referral_driver_reward, referral_customer_reward, referral_customer_welcome, referral_max_driver, referral_max_customer, referral_min_trip_m, referral_min_fare, wallet_max_percent, wallet_expiry_days").single(),
       sb.from("wallet_entries").select("*").order("created_at", { ascending: false }).limit(5000),
       sb.from("referrals").select("*").order("created_at", { ascending: false }).limit(1000),
     ]);
@@ -163,12 +165,12 @@ export default function RewardsTab() {
         <div className="space-y-1 rounded-xl bg-stone-50 p-3 text-sm text-stone-700">
           <p className="font-medium">What these rules do, in plain words</p>
           <p>
-            <b>IF</b> driver referrals are {s.referral_driver_enabled ? "on" : "off"} <b>AND</b> a new driver adds a code before their first delivery <b>AND</b> they deliver a trip of at least {km} km
-            {s.referral_min_fare > 0 && <> and ₹{s.referral_min_fare}</>} <b>THEN</b> the referring driver gets ₹{s.referral_driver_reward} (up to {s.referral_max_driver} drivers).
+            <b>IF</b> driver referrals are {s.referral_driver_enabled ? "on" : "off"} <b>AND</b> a new driver adds a code before their first delivery <b>AND</b> they finish {s.referral_driver_trips} trips of at least {km} km each
+            {s.referral_min_fare > 0 && <> and ₹{s.referral_min_fare}</>} <b>THEN</b> the referring driver gets ₹{s.referral_driver_reward} (up to {s.referral_max_driver} a month).
           </p>
           <p>
             <b>IF</b> customer referrals are {s.referral_customer_enabled ? "on" : "off"} <b>AND</b> a new customer adds a code before booking <b>THEN</b> they get ₹{s.referral_customer_welcome} right away,
-            <b> AND IF</b> their first trip (at least {km} km) is delivered <b>THEN</b> the referrer gets ₹{s.referral_customer_reward} (up to {s.referral_max_customer} friends).
+            <b> AND IF</b> they have {s.referral_customer_trips} deliveries (each at least {km} km) <b>AND</b> the person who referred them is a driver <b>THEN</b> that driver gets ₹{s.referral_customer_reward} (up to {s.referral_max_customer} a month).
           </p>
           <p>
             <b>IF</b> a customer has credit <b>THEN</b> it covers at most {s.wallet_max_percent}% of a fare. Pikop pays the driver that amount as wallet credit after delivery.

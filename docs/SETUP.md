@@ -32,6 +32,7 @@ You'll need: a GitHub login (you have one), and an email address to sign up for 
 14. Once more with [`supabase/migrations/0012_delete_account.sql`](../supabase/migrations/0012_delete_account.sql). In-app account deletion, required by the app stores.
 15. Once more with [`supabase/migrations/0013_vehicle_types.sql`](../supabase/migrations/0013_vehicle_types.sql). Vehicle types (Bike, 3 Wheeler, Mini Truck, Pickup) with sizes and fares; edit them in Admin → Vehicles. Drivers pick their vehicle and only see jobs for it.
 16. [`supabase/migrations/0014_business_plan_admin.sql`](../supabase/migrations/0014_business_plan_admin.sql). Admin Today, Ledger and Metrics tabs, required documents (insurance, and a permit for mini trucks), support and zone settings.
+17. [`supabase/migrations/0015_referral_plan.sql`](../supabase/migrations/0015_referral_plan.sql). Referral rules from the business plan: Rs 150 for a driver who refers a driver (after 5 trips, 3 a month), Rs 50 for a driver who refers a customer (after 3 deliveries).
 
 Check: **Table Editor** in the sidebar now lists `drivers`, `jobs`, `profiles`, `settings` and a few more.
 

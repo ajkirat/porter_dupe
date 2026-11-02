@@ -139,6 +139,8 @@ export type RewardSettings = {
   referral_driver_enabled: boolean;
   referral_customer_enabled: boolean;
   referral_driver_reward: number;
+  referral_driver_trips: number;
+  referral_customer_trips: number;
   referral_customer_reward: number;
   referral_customer_welcome: number;
   referral_max_driver: number;
