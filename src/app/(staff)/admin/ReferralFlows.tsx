@@ -83,20 +83,20 @@ export default function ReferralFlows({ flow }: { flow: (typeof FLOWS)[number]["
           {num("referred_reward")}
           <span className="text-xs font-normal text-stone-500">Goes to their {toWord} wallet</span>
         </label>
-        {!pikop && (
-          <label className="label">
-            The new {toWord} gets their credit
-            <select className="input" value={r.referred_when} onChange={(e) => set("referred_when", e.target.value as Rule["referred_when"])}>
-              <option value="signup">Right away, when they add the code</option>
-              <option value="trips">After they reach the deliveries below</option>
-            </select>
-          </label>
-        )}
         <label className="label">
           Deliveries the new {toWord} must complete
           {num("trips", 1)}
           <span className="text-xs font-normal text-stone-500">The reward is paid after this many deliveries</span>
         </label>
+        {!pikop && (
+          <label className="label">
+            The new {toWord} gets their credit
+            <select className="input" value={r.referred_when} onChange={(e) => set("referred_when", e.target.value as Rule["referred_when"])}>
+              <option value="signup">Right away, when they add the code</option>
+              <option value="trips">After they complete the deliveries set above</option>
+            </select>
+          </label>
+        )}
         {!pikop && (
           <label className="label">
             Most paid referrals per person each month
