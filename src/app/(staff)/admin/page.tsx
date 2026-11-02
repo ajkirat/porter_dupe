@@ -8,13 +8,16 @@ import BulkCreditTab from "./BulkCreditTab";
 import DriversTab from "./DriversTab";
 import RewardsTab from "./RewardsTab";
 import VehiclesTab from "./VehiclesTab";
+import LedgerTab from "./LedgerTab";
+import MetricsTab from "./MetricsTab";
+import TodayTab from "./TodayTab";
 import SettingsTab from "./SettingsTab";
 import TripsTab from "./TripsTab";
 
-const TABS = ["Trips", "Drivers", "Bulk credit", "Referrals", "Vehicles", "Settings"] as const;
+const TABS = ["Today", "Trips", "Drivers", "Bulk credit", "Referrals", "Ledger", "Metrics", "Vehicles", "Settings"] as const;
 
 function Admin() {
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Trips");
+  const [tab, setTab] = useState<(typeof TABS)[number]>("Today");
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [activePass, setActivePass] = useState<Record<string, DriverPass>>({});
 
@@ -49,7 +52,7 @@ function Admin() {
           {eligible.length} drivers with an active pass · {eligible.filter((d) => d.is_online).length} online
         </p>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {TABS.map((t) => (
           <button key={t} className={`btn ${tab === t ? "btn-primary" : ""}`} onClick={() => setTab(t)}>
             {t}
@@ -57,6 +60,9 @@ function Admin() {
           </button>
         ))}
       </div>
+      {tab === "Today" && <TodayTab drivers={drivers} activePass={activePass} go={setTab} />}
+      {tab === "Ledger" && <LedgerTab />}
+      {tab === "Metrics" && <MetricsTab />}
       {tab === "Trips" && <TripsTab eligible={eligible} />}
       {tab === "Drivers" && <DriversTab drivers={drivers} activePass={activePass} reload={load} />}
       {tab === "Bulk credit" && <BulkCreditTab />}

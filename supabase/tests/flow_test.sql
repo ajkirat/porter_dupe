@@ -64,7 +64,7 @@ select pg_temp.expect_error($$select public.admin_add_pass('00000000-0000-0000-0
 
 -- Admin approves KYC and records passes
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
-update public.drivers set kyc_status = 'approved';
+update public.drivers set kyc_docs = kyc_docs || '{"insurance":"x","permit":"y"}', kyc_status = 'approved';
 select public.admin_add_pass('00000000-0000-0000-0000-00000000000d', 'daily');
 select public.admin_add_pass('00000000-0000-0000-0000-00000000000d', 'weekly');
 select public.admin_add_pass('00000000-0000-0000-0000-00000000000e', 'daily');

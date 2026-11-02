@@ -84,6 +84,13 @@ export type Settings = {
   daily_pass_price: number;
   weekly_pass_price: number;
   nearby_radius_km: number;
+  support_phone: string | null;
+  support_hours: string | null;
+  zone_name: string;
+  zone_lat: number;
+  zone_lng: number;
+  zone_pickup_km: number;
+  zone_drop_km: number;
 };
 
 export const KYC_DOCS = [
@@ -92,6 +99,15 @@ export const KYC_DOCS = [
   { key: "aadhaar", label: "Aadhaar (front)" },
   { key: "photo", label: "Your photo" },
 ] as const;
+
+// Documents required on top of KYC_DOCS before approval: insurance for every vehicle, a commercial permit for mini trucks.
+export const EXTRA_DOCS = [
+  { key: "insurance", label: "Vehicle insurance" },
+  { key: "permit", label: "Commercial registration / permit" },
+] as const;
+export function requiredExtraDocs(vehicleType: string) {
+  return EXTRA_DOCS.filter((d) => d.key === "insurance" || vehicleType !== "bike");
+}
 
 export const STATUS_LABEL: Record<JobStatus, string> = {
   requested: "Finding a driver",

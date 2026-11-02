@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { errorText, supabase } from "@/lib/supabase";
 import { upiAppLinks, validVpa } from "@/lib/upi";
-import { KYC_DOCS, type Driver, type DriverPass, type KycStatus } from "@/lib/types";
+import { KYC_DOCS, requiredExtraDocs, type Driver, type DriverPass, type KycStatus } from "@/lib/types";
 
 // KYC review and pass management.
 export default function DriversTab({
@@ -28,6 +28,10 @@ export default function DriversTab({
   async function setKyc(d: Driver, status: KycStatus) {
     const note = status === "rejected" ? prompt("Reason shown to the driver", "Licence photo is not clear") : null;
     if (status === "rejected" && note === null) return;
+    if (status === "approved") {
+      const gone = requiredExtraDocs(d.vehicle_type).filter((x) => !d.kyc_docs[x.key]);
+      if (gone.length) return setError(`Cannot approve ${d.full_name}: ${gone.map((x) => x.label).join(", ")} missing. Ask the driver to upload it in the app.`);
+    }
     const { error } = await supabase().from("drivers").update({ kyc_status: status, kyc_note: note }).eq("id", d.id);
     if (error) setError(errorText(error));
     reload();
@@ -102,7 +106,7 @@ export default function DriversTab({
               {d.vehicle_type} · {d.vehicle_number} {d.licence_number && `· licence ${d.licence_number}`} {d.upi_id && `· UPI ${d.upi_id}`}
             </p>
             <div className="flex flex-wrap gap-2">
-              {KYC_DOCS.map((doc) =>
+              {[...KYC_DOCS, ...requiredExtraDocs(d.vehicle_type)].map((doc) =>
                 d.kyc_docs[doc.key] ? (
                   <button key={doc.key} className="btn py-1 text-xs" onClick={() => openDoc(d.kyc_docs[doc.key])}>
                     {doc.label}

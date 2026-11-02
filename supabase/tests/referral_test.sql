@@ -101,7 +101,7 @@ select pg_temp.as_user('00000000-0000-0000-0000-0000000000a5');
 insert into public.drivers (id, full_name, phone, vehicle_number, licence_number)
 values ('00000000-0000-0000-0000-0000000000a5', 'Gopal', '+919100000005', 'KA04GH3456', '');
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
-update public.drivers set kyc_status = 'approved';
+update public.drivers set kyc_docs = kyc_docs || '{"insurance":"x","permit":"y"}', kyc_status = 'approved';
 select public.admin_add_pass('00000000-0000-0000-0000-0000000000a4', 'daily');
 select public.admin_add_pass('00000000-0000-0000-0000-0000000000a5', 'daily');
 
@@ -389,3 +389,20 @@ do $$ begin assert (select full_name from public.drivers where id = '00000000-00
 set role authenticated;
 
 \echo 'REFERRAL CHECKS PASSED'
+
+reset role;
+-- 0014: approval needs the vehicle's required documents
+do $$
+declare d uuid; begin
+  select id into d from public.drivers limit 1;
+  update public.drivers set vehicle_type = 'tata_ace', kyc_status = 'pending', kyc_docs = '{"insurance":"x"}' where id = d;
+  begin
+    update public.drivers set kyc_status = 'approved' where id = d;
+    raise exception 'FAIL: approved without permit';
+  exception when others then
+    if sqlerrm not like 'cannot approve: permit%' then raise; end if;
+  end;
+  update public.drivers set kyc_docs = '{"insurance":"x","permit":"y"}' where id = d;
+  update public.drivers set kyc_status = 'approved' where id = d;
+  raise notice 'DOC CHECKS PASSED';
+end $$;

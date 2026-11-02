@@ -5,7 +5,7 @@ import { computeFare } from "@/lib/fare";
 import { errorText, supabase } from "@/lib/supabase";
 import type { Settings } from "@/lib/types";
 
-const FIELDS: { key: keyof Settings; label: string }[] = [
+const FIELDS: { key: Exclude<keyof Settings, "zone_name" | "support_phone" | "support_hours">; label: string }[] = [
   { key: "base_fare", label: "Base fare (₹)" },
   { key: "included_km", label: "Km included in base fare" },
   { key: "per_km", label: "Per km after that (₹)" },
@@ -13,6 +13,15 @@ const FIELDS: { key: keyof Settings; label: string }[] = [
   { key: "daily_pass_price", label: "Driver day pass (₹)" },
   { key: "weekly_pass_price", label: "Driver week pass (₹)" },
   { key: "nearby_radius_km", label: "Drivers see open jobs within (km)" },
+  { key: "zone_lat", label: "Service zone centre, latitude" },
+  { key: "zone_lng", label: "Service zone centre, longitude" },
+  { key: "zone_pickup_km", label: "Zone: pickup within (km), noted only" },
+  { key: "zone_drop_km", label: "Zone: drop within (km), noted only" },
+];
+const TEXT_FIELDS: { key: "zone_name" | "support_phone" | "support_hours"; label: string }[] = [
+  { key: "zone_name", label: "Zone name" },
+  { key: "support_phone", label: "Support phone number (shown in the apps)" },
+  { key: "support_hours", label: "Support hours, e.g. 12-2 pm and 6-9 pm" },
 ];
 
 export default function SettingsTab() {
@@ -48,6 +57,19 @@ export default function SettingsTab() {
             onChange={(e) => {
               setSaved("");
               setS({ ...s, [f.key]: Number(e.target.value) });
+            }}
+          />
+        </label>
+      ))}
+      {TEXT_FIELDS.map((f) => (
+        <label key={f.key} className="label">
+          {f.label}
+          <input
+            className="input"
+            value={s[f.key] ?? ""}
+            onChange={(e) => {
+              setSaved("");
+              setS({ ...s, [f.key]: e.target.value });
             }}
           />
         </label>
