@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { contactsSupported, pickContact, tenDigits } from "@/lib/contacts";
 import { supabase } from "@/lib/supabase";
+import { useT } from "@/i18n";
 
 type Pick = { name: string; phone: string };
 
 // "Choose from contacts" where the browser has a contact picker (Android Chrome). Everywhere else (iPhone, desktop)
 // there is no web API for the address book, so we offer the people you sent parcels to before, as one-tap chips.
 export default function ContactButton({ onPick, field = "receiver" }: { onPick: (c: Pick) => void; field?: "receiver" | "pickup" }) {
+  const { t } = useT();
   const [ok, setOk] = useState<boolean | null>(null);
   const [recent, setRecent] = useState<Pick[]>([]);
   const [note, setNote] = useState("");
@@ -44,13 +46,13 @@ export default function ContactButton({ onPick, field = "receiver" }: { onPick: 
         type="button"
         className="text-left text-xs font-medium text-brand"
         onClick={async () => {
-          if (!ok) return setNote("Your browser can't open the phone contacts (iPhones and computers don't allow it). Pick a recent person below, or type the number. Android Chrome has the contact picker.");
+          if (!ok) return setNote(t("Your browser can't open the phone contacts. Pick a recent person below, or type the number."));
           setNote("");
           const c = await pickContact();
           if (c) onPick(c);
         }}
       >
-        📇 Choose from contacts
+        📇 {t("Choose from contacts")}
       </button>
       {note && <p className="text-xs text-stone-500">{note}</p>}
       {recent.length > 0 && (

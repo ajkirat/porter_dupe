@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { formatKm } from "@/lib/fare";
 import type { Job } from "@/lib/types";
+import { useT } from "@/i18n";
 
 // A plain trip receipt as text: shared through the phone's share sheet, or copied. Not a GST invoice.
 export default function ReceiptButton({ job, vehicleName, driverName }: { job: Job; vehicleName: string; driverName?: string }) {
+  const { t } = useT();
   const [done, setDone] = useState(false);
   const paid = job.fare_rupees - (job.wallet_discount ?? 0);
   const text = [
@@ -32,7 +34,7 @@ export default function ReceiptButton({ job, vehicleName, driverName }: { job: J
   }
   return (
     <button className="btn" onClick={share}>
-      {done ? "Receipt copied" : "Share receipt"}
+      {done ? t("Receipt copied") : t("Share receipt")}
     </button>
   );
 }

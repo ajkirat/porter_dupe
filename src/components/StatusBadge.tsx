@@ -1,4 +1,7 @@
+"use client";
+
 import { STATUS_LABEL, type JobStatus } from "@/lib/types";
+import { useT } from "@/i18n";
 
 const STYLES: Record<JobStatus, string> = {
   requested: "bg-amber-100 text-amber-800",
@@ -10,5 +13,6 @@ const STYLES: Record<JobStatus, string> = {
 };
 
 export default function StatusBadge({ status }: { status: JobStatus }) {
-  return <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STYLES[status]}`}>{STATUS_LABEL[status]}</span>;
+  const { t } = useT();
+  return <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STYLES[status]}`}>{t(STATUS_LABEL[status])}</span>;
 }

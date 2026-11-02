@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { isValidIndianMobile, toE164 } from "@/lib/phone";
 import { errorText, supabase } from "@/lib/supabase";
+import { useT } from "@/i18n";
 
 // Supabase phone OTP: number first, then the 6 digit code (verified as soon as it is complete).
 export default function PhoneLogin() {
+  const { t } = useT();
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [sent, setSent] = useState(false);
@@ -39,7 +41,7 @@ export default function PhoneLogin() {
     const { error } = await supabase().auth.verifyOtp({ phone: e164, token, type: "sms" });
     setBusy(false);
     if (error) {
-      setError("That code didn't work. Check it and try again.");
+      setError(t("That code didn't work. Check it and try again."));
       setCode("");
     }
   }
@@ -48,7 +50,7 @@ export default function PhoneLogin() {
     return (
       <form onSubmit={send} className="space-y-4">
         <label className="label">
-          Mobile number
+          {t("Mobile number")}
           <div className="mt-1 flex items-center gap-2">
             <span className="rounded-xl border border-stone-300 bg-stone-50 px-3 py-2.5 text-base">+91</span>
             <input
@@ -64,7 +66,7 @@ export default function PhoneLogin() {
         </label>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button className="btn btn-primary w-full py-3.5 text-base" disabled={busy || !isValidIndianMobile(phone)}>
-          {busy ? "Sending…" : "Get OTP"}
+          {busy ? t("Sending…") : t("Get OTP")}
         </button>
       </form>
     );
@@ -73,7 +75,7 @@ export default function PhoneLogin() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-stone-600">
-        Enter the 6 digit code sent to <b>{e164}</b>
+        {t("Enter the 6 digit code sent to")} <b>{e164}</b>
       </p>
       <input
         className="input text-center text-3xl tracking-[0.5em]"
@@ -89,13 +91,13 @@ export default function PhoneLogin() {
         }}
       />
       {error && <p className="text-sm text-red-600">{error}</p>}
-      {busy && <p className="text-sm text-stone-500">Checking…</p>}
+      {busy && <p className="text-sm text-stone-500">{t("Checking…")}</p>}
       <div className="flex justify-between text-sm">
         <button className="text-stone-600" onClick={() => setSent(false)}>
-          Change number
+          {t("Change number")}
         </button>
         <button className="text-brand disabled:text-stone-400" disabled={resendIn > 0 || busy} onClick={() => send()}>
-          {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
+          {resendIn > 0 ? t("Resend in {s}s", { s: resendIn }) : t("Resend code")}
         </button>
       </div>
     </div>

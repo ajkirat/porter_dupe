@@ -9,6 +9,7 @@ import ReceiptButton from "@/components/ReceiptButton";
 import SupportCard from "@/components/SupportCard";
 import Map, { type MapMarker } from "@/components/Map";
 import Sheet from "@/components/Sheet";
+import { useT } from "@/i18n";
 import { formatKm, formatMinutes } from "@/lib/fare";
 import { getRoute } from "@/lib/geo";
 import { errorText, supabase } from "@/lib/supabase";
@@ -29,6 +30,7 @@ const HEADLINE: Record<JobStatus, string> = {
 const PROGRESS: Record<JobStatus, number> = { requested: 1, assigned: 1, accepted: 2, picked_up: 3, delivered: 4, cancelled: 0 };
 
 export default function OrderView() {
+  const { t } = useT();
   const { id } = useParams<{ id: string }>();
   const [job, setJob] = useState<Job | null>(null);
   const [secrets, setSecrets] = useState<Secrets | null>(null);
@@ -111,14 +113,14 @@ export default function OrderView() {
     );
   }, [driverLat, driverLng, status, job]);
 
-  if (notFound) return <p className="p-6 text-stone-500">Order not found.</p>;
-  if (!job) return <p className="p-6 text-stone-500">Loading…</p>;
+  if (notFound) return <p className="p-6 text-stone-500">{t("Order not found.")}</p>;
+  if (!job) return <p className="p-6 text-stone-500">{t("Loading…")}</p>;
 
   const trackingUrl = `${window.location.origin}/track/${job.tracking_token}`;
   const active = job.status === "requested" || job.status === "assigned" || job.status === "accepted" || job.status === "picked_up";
   const markers: MapMarker[] = [
-    { pos: { lat: job.pickup_lat, lng: job.pickup_lng }, label: "Pickup", kind: "pickup" },
-    { pos: { lat: job.drop_lat, lng: job.drop_lng }, label: "Drop", kind: "drop" },
+    { pos: { lat: job.pickup_lat, lng: job.pickup_lng }, label: t("Pickup"), kind: "pickup" },
+    { pos: { lat: job.drop_lat, lng: job.drop_lng }, label: t("Drop"), kind: "drop" },
   ];
   if (driver?.last_lat && driver.last_lng && (job.status === "accepted" || job.status === "picked_up")) {
     markers.push({ pos: { lat: driver.last_lat, lng: driver.last_lng }, label: driver.full_name, kind: "driver" });
@@ -127,12 +129,12 @@ export default function OrderView() {
   const liveEta = tracking && eta?.status === job.status ? eta : null;
   const seenAgo = driver?.last_seen_at && now > 0 ? Math.max(0, Math.round((now - new Date(driver.last_seen_at).getTime()) / 1000)) : null;
   // The OTP the customer needs to read out next.
-  const otp = job.status === "picked_up" ? { label: "Drop OTP", hint: "Give this to the receiver. The driver asks for it at delivery.", value: secrets?.drop_otp } : { label: "Pickup OTP", hint: "Tell the driver this when they collect the parcel.", value: secrets?.pickup_otp };
+  const otp = job.status === "picked_up" ? { label: t("Drop OTP"), hint: t("Give this to the receiver. The driver asks for it at delivery."), value: secrets?.drop_otp } : { label: t("Pickup OTP"), hint: t("Tell the driver this when they collect the parcel."), value: secrets?.pickup_otp };
 
   async function share() {
-    const text = `Track my parcel on Pikop: ${trackingUrl}`;
+    const text = `${t("Track my parcel on Pikop")}: ${trackingUrl}`;
     if (navigator.share) {
-      await navigator.share({ title: "Track my parcel", text, url: trackingUrl }).catch(() => {});
+      await navigator.share({ title: t("Track my parcel"), text, url: trackingUrl }).catch(() => {});
     } else {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -140,7 +142,7 @@ export default function OrderView() {
   }
 
   async function cancel() {
-    if (!confirm("Cancel this delivery?")) return;
+    if (!confirm(t("Cancel this delivery?"))) return;
     const { error } = await supabase().rpc("cancel_job", { p_job: id, p_reason: "cancelled by customer" });
     if (error) setError(errorText(error));
     else load();
@@ -149,15 +151,15 @@ export default function OrderView() {
   return (
     <div className="absolute inset-0">
       <Map markers={markers} route={liveEta?.coords} padBottom={sheetH + 24} className="absolute inset-0 h-full" />
-      <Link href="/orders" className="absolute left-4 top-4 z-10 rounded-full bg-white p-3 shadow-lg" aria-label="Back to orders">
+      <Link href="/orders" className="absolute left-4 top-4 z-10 rounded-full bg-white p-3 shadow-lg" aria-label={t("Back to orders")}>
         <BackIcon className="h-5 w-5" />
       </Link>
 
       <Sheet onHeight={setSheetH}>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold">{job.status === "accepted" && job.driver_arrived_at ? "Driver has arrived at pickup" : HEADLINE[job.status]}</h1>
-            {job.status === "requested" && <p className="mt-0.5 text-sm text-stone-500">This can take a few minutes. We&apos;ll update this screen.</p>}
+            <h1 className="text-xl font-bold">{job.status === "accepted" && job.driver_arrived_at ? t("Driver has arrived at pickup") : t(HEADLINE[job.status])}</h1>
+            {job.status === "requested" && <p className="mt-0.5 text-sm text-stone-500">{t("This can take a few minutes. We'll update this screen.")}</p>}
           </div>
           <p className="text-xl font-bold">₹{job.fare_rupees - (job.wallet_discount ?? 0)}</p>
         </div>
@@ -167,16 +169,16 @@ export default function OrderView() {
             {driver?.last_lat != null ? (
               <>
                 <span className="font-medium">
-                  {liveEta ? `${formatKm(liveEta.distanceM)} away · about ${formatMinutes(liveEta.durationS)}` : "Driver location live"}
-                  {job.status === "accepted" ? " to pickup" : " to drop"}
+                  {liveEta ? `${formatKm(liveEta.distanceM)} ${t("away")} · ${t("about")} ${formatMinutes(liveEta.durationS)}` : t("Driver location live")}
+                  {job.status === "accepted" ? ` ${t("to pickup")}` : ` ${t("to drop")}`}
                 </span>
                 <span className="flex items-center gap-1.5 text-xs">
                   <span className={`h-2 w-2 rounded-full ${seenAgo !== null && seenAgo > 60 ? "bg-amber-500" : "animate-pulse bg-green-500"}`} />
-                  {seenAgo === null ? "Live" : seenAgo > 60 ? "Signal lost" : seenAgo < 10 ? "Live" : `${seenAgo}s ago`}
+                  {seenAgo === null ? t("Live") : seenAgo > 60 ? t("Signal lost") : seenAgo < 10 ? t("Live") : t("{s}s ago", { s: seenAgo })}
                 </span>
               </>
             ) : (
-              <span>Waiting for the driver&apos;s location…</span>
+              <span>{t("Waiting for the driver's location…")}</span>
             )}
           </div>
         )}
@@ -193,7 +195,7 @@ export default function OrderView() {
           <div className="mt-4 flex items-center gap-3 rounded-2xl bg-green-50 p-4 text-green-800">
             <CheckIcon className="h-8 w-8" />
             <p className="text-sm">
-              Delivered. Please pay the driver ₹{job.fare_rupees - (job.wallet_discount ?? 0)} below.
+              {t("Delivered. Please pay the driver ₹{amount} below.", { amount: job.fare_rupees - (job.wallet_discount ?? 0) })}
             </p>
           </div>
         )}
@@ -216,7 +218,7 @@ export default function OrderView() {
                 {driver.upi_id && ` · UPI ${driver.upi_id}`}
               </p>
             </div>
-            <a href={`tel:${driver.phone}`} className="rounded-full bg-brand p-3 text-white" aria-label="Call driver">
+            <a href={`tel:${driver.phone}`} className="rounded-full bg-brand p-3 text-white" aria-label={t("Call driver")}>
               <PhoneIcon className="h-5 w-5" />
             </a>
           </div>
@@ -234,7 +236,7 @@ export default function OrderView() {
             {job.drop_address}
           </p>
           <p className="pt-1 text-xs text-stone-500">
-            {vehicleName && `${vehicleName} · `}{formatKm(job.distance_m)} · ₹{job.fare_rupees - (job.wallet_discount ?? 0)} to the driver · receiver {job.receiver_name}
+            {vehicleName && `${vehicleName} · `}{formatKm(job.distance_m)} · ₹{job.fare_rupees - (job.wallet_discount ?? 0)} {t("to the driver")} · {t("receiver")} {job.receiver_name}
           </p>
         </div>
 
@@ -242,18 +244,18 @@ export default function OrderView() {
           {active && (
             <button className="btn gap-2" onClick={share}>
               <ShareIcon className="h-5 w-5" />
-              {copied ? "Link copied" : "Share tracking link"}
+              {copied ? t("Link copied") : t("Share tracking link")}
             </button>
           )}
           {(job.status === "requested" || job.status === "assigned" || job.status === "accepted") && (
             <button className="btn btn-danger" onClick={cancel}>
-              Cancel delivery
+              {t("Cancel delivery")}
             </button>
           )}
           {job.status === "delivered" && <ReceiptButton job={job} vehicleName={vehicleName} driverName={driver?.full_name} />}
           {(job.status === "delivered" || job.status === "cancelled") && (
             <Link href="/" className="btn btn-primary py-3">
-              Send another parcel
+              {t("Send another parcel")}
             </Link>
           )}
         </div>

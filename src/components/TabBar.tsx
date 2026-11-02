@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HomeIcon, ListIcon, UserIcon } from "./icons";
+import { useT } from "@/i18n";
 
 const TABS = [
   { href: "/", label: "Send", Icon: HomeIcon },
@@ -11,6 +12,7 @@ const TABS = [
 ];
 
 export default function TabBar() {
+  const { t } = useT();
   const path = usePathname();
   return (
     <nav className="flex shrink-0 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)]">
@@ -23,7 +25,7 @@ export default function TabBar() {
             className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium ${active ? "text-brand" : "text-stone-500"}`}
           >
             <Icon className="h-6 w-6" />
-            {label}
+            {t(label)}
           </Link>
         );
       })}

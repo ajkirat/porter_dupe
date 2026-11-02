@@ -8,6 +8,7 @@ import Map, { type MapFocus, type MapMarker } from "@/components/Map";
 import PlaceSearch from "@/components/PlaceSearch";
 import Sheet from "@/components/Sheet";
 import { useUser } from "@/components/UserContext";
+import { useT } from "@/i18n";
 import VehicleDiagram from "@/components/VehicleDiagram";
 import { BIKE_ONLY, capacity, sizeCm, sizeFeet, type VehicleType } from "@/lib/vehicles";
 import { computeFare, DEFAULT_FARE, formatKm, formatMinutes, type FareSettings } from "@/lib/fare";
@@ -24,6 +25,7 @@ const FIELD_TITLE: Record<Field, string> = { pickup: "Pickup location", drop: "D
 
 export default function HomePage() {
   const router = useRouter();
+  const { t } = useT();
   useUser(); // the shell guarantees a signed-in user; the booking RPC reads the session itself
 
   const [pickup, setPickup] = useState<Place | null>(null);
@@ -66,7 +68,7 @@ export default function HomePage() {
         const label = await reverseGeocode(p);
         setPickup((prev) => (force || !prev ? { ...p, label } : prev));
       },
-      () => setError("Couldn't get your location. Search for it or choose on the map."),
+      () => setError(t("Couldn't get your location. Search for it or choose on the map.")),
       { enableHighAccuracy: true, timeout: 10000 },
     );
   }
@@ -218,8 +220,8 @@ export default function HomePage() {
   const picking = overlay?.kind === "pick";
   const markers: MapMarker[] = [];
   if (!picking) {
-    if (pickup) markers.push({ pos: pickup, label: "Pickup", kind: "pickup" });
-    if (drop) markers.push({ pos: drop, label: "Drop", kind: "drop" });
+    if (pickup) markers.push({ pos: pickup, label: t("Pickup"), kind: "pickup" });
+    if (drop) markers.push({ pos: drop, label: t("Drop"), kind: "drop" });
   }
   const vehicle = vehicles.find((v) => v.code === vehicleCode) ?? vehicles[0];
   const rates = (v: VehicleType): FareSettings => (v.code === "bike" ? fareSettings : v);
@@ -261,7 +263,7 @@ export default function HomePage() {
         <button
           className="absolute right-4 top-4 z-10 rounded-full bg-white p-3 shadow-lg"
           onClick={() => locate(true)}
-          aria-label="Use my location"
+          aria-label={t("Use my location")}
         >
           <LocateIcon className="h-5 w-5 text-brand" />
         </button>
@@ -269,32 +271,32 @@ export default function HomePage() {
 
       {picking ? (
         <Sheet onHeight={setSheetH}>
-          <p className="text-xs font-medium uppercase tracking-wide text-stone-500">{FIELD_TITLE[overlay.field]}</p>
-          <p className="mt-1 min-h-[2.5rem] text-base font-medium">{pickLabel || "Move the map to place the pin"}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-stone-500">{t(FIELD_TITLE[overlay.field])}</p>
+          <p className="mt-1 min-h-[2.5rem] text-base font-medium">{pickLabel || t("Move the map to place the pin")}</p>
           <div className="mt-3 grid grid-cols-[auto_1fr] gap-2">
             <button className="btn" onClick={() => setOverlay(null)}>
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               className="btn btn-primary py-3"
               disabled={!pickCenter || !pickLabel}
               onClick={() => pickCenter && setPlace(overlay.field, { ...pickCenter, label: pickLabel })}
             >
-              Confirm location
+              {t("Confirm location")}
             </button>
           </div>
         </Sheet>
       ) : step === "where" ? (
         <Sheet onHeight={setSheetH}>
-          <h1 className="text-xl font-bold">Send a parcel</h1>
+          <h1 className="text-xl font-bold">{t("Send a parcel")}</h1>
           <div className="mt-3 divide-y divide-stone-100 rounded-2xl border border-stone-200">
-            <LocationRow dot="bg-green-600" hint="Pickup" value={pickup?.label} empty="Set pickup location" onClick={() => setOverlay({ kind: "search", field: "pickup" })} />
-            <LocationRow dot="bg-red-600 rounded-[3px]" hint="Drop" value={drop?.label} empty="Where to deliver?" onClick={() => setOverlay({ kind: "search", field: "drop" })} />
+            <LocationRow dot="bg-green-600" hint={t("Pickup")} value={pickup?.label} empty={t("Set pickup location")} onClick={() => setOverlay({ kind: "search", field: "pickup" })} />
+            <LocationRow dot="bg-red-600 rounded-[3px]" hint={t("Drop")} value={drop?.label} empty={t("Where to deliver?")} onClick={() => setOverlay({ kind: "search", field: "drop" })} />
           </div>
 
           {saved.length > 0 && !(pickup && drop) && (
             <div className="mt-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Saved routes</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-stone-500">{t("Saved routes")}</p>
               <div className="mt-1 flex gap-2 overflow-x-auto pb-1">
                 {saved.map((r) => (
                   <button key={r.id} type="button" className="shrink-0 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm" onClick={() => applyRoute(r)}>
@@ -308,8 +310,8 @@ export default function HomePage() {
           {route && fare !== null && (
             <div className="mt-4 space-y-3">
               <p className="text-xs text-stone-500">
-                {formatKm(route.distanceM)} · about {formatMinutes(route.durationS)}
-                {route.approximate && " · estimate"}
+                {formatKm(route.distanceM)} · {t("about")} {formatMinutes(route.durationS)}
+                {route.approximate && ` · ${t("estimate")}`}
               </p>
               <div className="space-y-2">
                 {vehicles.map((v) => {
@@ -340,65 +342,65 @@ export default function HomePage() {
                 })}
               </div>
               <button className="btn btn-primary w-full py-3.5 text-base" onClick={() => setStep("details")}>
-                Continue
+                {t("Continue")}
               </button>
             </div>
           )}
-          {!route && pickup && drop && <p className="mt-4 text-sm text-stone-500">Working out the route…</p>}
+          {!route && pickup && drop && <p className="mt-4 text-sm text-stone-500">{t("Working out the route…")}</p>}
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
         </Sheet>
       ) : (
         <Sheet className="max-h-[88%]" onHeight={setSheetH}>
           <form onSubmit={book} className="space-y-3">
             <div className="flex items-center gap-2">
-              <button type="button" className="-ml-2 rounded-full p-2 hover:bg-stone-100" onClick={() => setStep("where")} aria-label="Back">
+              <button type="button" className="-ml-2 rounded-full p-2 hover:bg-stone-100" onClick={() => setStep("where")} aria-label={t("Back")}>
                 <BackIcon />
               </button>
-              <h1 className="text-xl font-bold">Parcel details</h1>
+              <h1 className="text-xl font-bold">{t("Parcel details")}</h1>
             </div>
             <p className="truncate text-xs text-stone-500">
               {pickup?.label} → {drop?.label}
             </p>
             <label className="label">
-              What are you sending?
-              <input className="input" placeholder="e.g. documents, small box under 10 kg" {...field("item_note")} />
+              {t("What are you sending?")}
+              <input className="input" placeholder={t("e.g. documents, small box under 10 kg")} {...field("item_note")} />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="label">
-                Receiver name
+                {t("Receiver name")}
                 <input className="input" autoComplete="off" {...field("receiver_name")} />
               </label>
               <label className="label">
-                Receiver phone
-                <input className="input" inputMode="numeric" placeholder="10 digits" {...field("receiver_phone")} />
+                {t("Receiver phone")}
+                <input className="input" inputMode="numeric" placeholder={t("10 digits")} {...field("receiver_phone")} />
               </label>
             </div>
             <ContactButton onPick={(c) => setForm((f) => ({ ...f, receiver_name: c.name || f.receiver_name, receiver_phone: c.phone }))} />
             <details className="text-sm">
-              <summary className="cursor-pointer py-1 text-stone-600">Someone else hands over the parcel?</summary>
+              <summary className="cursor-pointer py-1 text-stone-600">{t("Someone else hands over the parcel?")}</summary>
               <div className="mt-2 grid grid-cols-2 gap-3">
                 <label className="label">
-                  Their name
+                  {t("Their name")}
                   <input className="input" {...field("pickup_contact_name")} />
                 </label>
                 <label className="label">
-                  Their phone
+                  {t("Their phone")}
                   <input className="input" inputMode="numeric" {...field("pickup_contact_phone")} />
                 </label>
               </div>
               <ContactButton field="pickup" onPick={(c) => setForm((f) => ({ ...f, pickup_contact_name: c.name || f.pickup_contact_name, pickup_contact_phone: c.phone }))} />
             </details>
-            <p className="text-xs text-stone-500">You pay the driver directly, by cash, UPI or QR once the parcel is delivered. Pikop never handles the money.{discount > 0 && ` Your wallet credit lowers what you pay the driver to ₹${(fare ?? 0) - discount}.`}</p>
+            <p className="text-xs text-stone-500">{t("You pay the driver directly, by cash, UPI or QR once the parcel is delivered. Pikop never handles the money.")}{discount > 0 && ` ${t("Your wallet credit lowers what you pay the driver to ₹{amount}.", { amount: (fare ?? 0) - discount })}`}</p>
             <label className="flex items-center gap-2 text-sm text-stone-700">
               <input type="checkbox" className="h-4 w-4" checked={saveRoute} onChange={(e) => setSaveRoute(e.target.checked)} />
-              Save this route for next time
+              {t("Save this route for next time")}
             </label>
             {wallet > 0 && (
               <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-green-600 bg-green-50 p-3 text-sm">
                 <span>
-                  <b>Use wallet credit</b>
+                  <b>{t("Use wallet credit")}</b>
                   <span className="block text-xs text-stone-600">
-                    You have ₹{wallet}. {useWallet ? `₹${discount} comes off this trip.` : "Tap to use it on this trip."}
+                    {t("You have ₹{amount}.", { amount: wallet })} {useWallet ? t("₹{amount} comes off this trip.", { amount: discount }) : t("Tap to use it on this trip.")}
                   </span>
                 </span>
                 <input type="checkbox" className="h-5 w-5" checked={useWallet} onChange={(e) => setUseWallet(e.target.checked)} />
@@ -407,13 +409,13 @@ export default function HomePage() {
             <label className="flex items-start gap-2 rounded-xl bg-stone-50 p-3 text-xs text-stone-600">
               <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
               <span>
-                Pikop connects you with a driver and is not responsible for the parcel. I am not sending anything that would need a police
-                complaint if it were lost or damaged{vehicle.code === "bike" ? `, and it weighs up to ${vehicle.max_kg} kg` : ""}.
+                {t("Pikop connects you with a driver and is not responsible for the parcel. I am not sending anything that would need a police complaint if it were lost or damaged")}
+                {vehicle.code === "bike" ? t(", and it weighs up to {kg} kg", { kg: vehicle.max_kg }) : ""}.
               </span>
             </label>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button className="btn btn-primary w-full py-3.5 text-base" disabled={!detailsValid || busy || !agreed}>
-              {busy ? "Booking…" : `Book ${vehicle.name} · ₹${(fare ?? 0) - discount}`}
+              {busy ? t("Booking…") : `${t("Book")} ${vehicle.name} · ₹${(fare ?? 0) - discount}`}
             </button>
           </form>
         </Sheet>
@@ -421,7 +423,7 @@ export default function HomePage() {
 
       {overlay?.kind === "search" && (
         <PlaceSearch
-          title={FIELD_TITLE[overlay.field]}
+          title={t(FIELD_TITLE[overlay.field])}
           onPick={(p) => setPlace(overlay.field, p)}
           onClose={() => setOverlay(null)}
           onUseCurrent={
