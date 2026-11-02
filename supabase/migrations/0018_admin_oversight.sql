@@ -160,7 +160,7 @@ begin
       (select count(*) from public.referrals r where r.referrer_id = p.id and r.status = 'rewarded'),
       null::timestamptz, null::text
     from public.profiles p
-    where not p.is_admin and not exists (select 1 from public.drivers d where d.id = p.id)
+    where not exists (select 1 from public.drivers d where d.id = p.id)
     order by p.created_at desc;
   end if;
 end $$;
