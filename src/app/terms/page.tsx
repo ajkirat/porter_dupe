@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Terms of use" };
 
-const CONTACT = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "[add contact email]";
+const CONTACT = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "pikopsupport@gmail.com";
 
 // DRAFT. Have this reviewed by a qualified person before launch.
 export default function Terms() {

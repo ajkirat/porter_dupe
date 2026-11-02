@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Privacy policy" };
 
-const CONTACT = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "[add contact email]";
+const CONTACT = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "pikopsupport@gmail.com";
 
 // DRAFT. Have this reviewed by a qualified person before launch, and keep it matching what the app really does.
 export default function Privacy() {
@@ -31,7 +31,7 @@ export default function Privacy() {
       </ul>
 
       <h2 className="text-lg font-semibold">How long we keep it</h2>
-      <p>Order records are kept so that disputes and legal needs can be handled, for [add period]. When you delete your account in the app, your saved routes and wallet are removed and your name and number are blanked; past orders stay without your identity. The receiver&apos;s details on past orders are kept with the order record for the same period.</p>
+      <p>Order records are kept so that disputes and legal needs can be handled, for 12 months after delivery. When you delete your account in the app, your saved routes and wallet are removed and your name and number are blanked; past orders stay without your identity. The receiver&apos;s details on past orders are kept with the order record for the same period.</p>
 
       <h2 className="text-lg font-semibold">Your choices</h2>
       <p>You can delete your account in the app (Account, then Delete my account). You can turn off location in your phone settings and type the pickup address instead. To see or correct your data, contact us below.</p>
