@@ -8,7 +8,7 @@ createdb "$DB"
 trap 'dropdb --if-exists "$DB"' EXIT
 psql -q -v ON_ERROR_STOP=1 -d "$DB" -f tests/supabase_stub.sql
 # 0001-0014 first: flow_test and referral_test describe the rules before 0015 (business-plan referrals).
-for f in migrations/00{0,1}[0-9]_*.sql; do case "$f" in migrations/0015*|migrations/0016*|migrations/0017*) continue;; esac; psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$f"; done
+for f in migrations/00{0,1}[0-9]_*.sql; do case "$f" in migrations/0015*|migrations/0016*|migrations/0017*|migrations/0018*) continue;; esac; psql -q -v ON_ERROR_STOP=1 -d "$DB" -f "$f"; done
 psql -q -v ON_ERROR_STOP=1 -d "$DB" -o /dev/null -f tests/flow_test.sql
 psql -q -v ON_ERROR_STOP=1 -d "$DB" -o /dev/null -f tests/referral_test.sql
 psql -q -v ON_ERROR_STOP=1 -d "$DB" -f migrations/0015_referral_plan.sql
@@ -17,3 +17,5 @@ psql -q -v ON_ERROR_STOP=1 -d "$DB" -f migrations/0016_referral_flows.sql
 psql -q -v ON_ERROR_STOP=1 -d "$DB" -o /dev/null -f tests/referral_flows_test.sql
 psql -q -v ON_ERROR_STOP=1 -d "$DB" -f migrations/0017_referral_zero.sql
 psql -q -v ON_ERROR_STOP=1 -d "$DB" -o /dev/null -f tests/referral_zero_test.sql
+psql -q -v ON_ERROR_STOP=1 -d "$DB" -f migrations/0018_admin_oversight.sql
+psql -q -v ON_ERROR_STOP=1 -d "$DB" -o /dev/null -f tests/oversight_test.sql

@@ -14,9 +14,10 @@ export default function TodayTab({
 }: {
   drivers: Driver[];
   activePass: Record<string, DriverPass>;
-  go: (tab: "Drivers" | "Trips" | "Ledger") => void;
+  go: (tab: "Drivers" | "Trips" | "Ledger" | "Watchlist") => void;
 }) {
   const [stuck, setStuck] = useState<Stuck[]>([]);
+  const [flags, setFlags] = useState<{ high: number; medium: number }>({ high: 0, medium: 0 });
   const [loaded, setLoaded] = useState(false);
   const [now] = useState(() => Date.now());
 
@@ -32,6 +33,12 @@ export default function TodayTab({
         setStuck((data as Stuck[]) ?? []);
         setLoaded(true);
       });
+    supabase()
+      .rpc("admin_risk_flags")
+      .then(({ data }) => {
+        const rows = (data as { severity: string }[] | null) ?? [];
+        setFlags({ high: rows.filter((r) => r.severity === "high").length, medium: rows.filter((r) => r.severity === "medium").length });
+      });
   }, []);
 
   const pending = drivers.filter((d) => d.kyc_status === "pending");
@@ -43,6 +50,15 @@ export default function TodayTab({
 
   const missingDocs = (d: Driver) => requiredExtraDocs(d.vehicle_type).filter((x) => !d.kyc_docs[x.key]).map((x) => x.label);
   const items = [
+    ...(flags.high + flags.medium > 0
+      ? [{
+          key: "watch",
+          text: `${flags.high + flags.medium} suspicious pattern${flags.high + flags.medium === 1 ? "" : "s"} on the Watchlist`,
+          sub: `${flags.high} high, ${flags.medium} medium`,
+          button: "Check",
+          tab: "Watchlist" as const,
+        }]
+      : []),
     ...pending.map((d) => ({
       key: `kyc-${d.id}`,
       text: `Review ${d.full_name} (${d.vehicle_type})`,

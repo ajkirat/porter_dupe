@@ -35,6 +35,7 @@ You'll need: a GitHub login (you have one), and an email address to sign up for 
 17. [`supabase/migrations/0015_referral_plan.sql`](../supabase/migrations/0015_referral_plan.sql). Referral rules from the business plan: Rs 150 for a driver who refers a driver (after 5 trips, 3 a month), Rs 50 for a driver who refers a customer (after 3 deliveries).
 18. [`supabase/migrations/0016_referral_flows.sql`](../supabase/migrations/0016_referral_flows.sql). Six referral flows (driver, customer and Pikop referring each other), each with its own rules in Admin → Referrals.
 19. [`supabase/migrations/0017_referral_zero.sql`](../supabase/migrations/0017_referral_zero.sql). Zero is allowed in every referral field; 0 deliveries pays the moment a code is added.
+20. [`supabase/migrations/0018_admin_oversight.sql`](../supabase/migrations/0018_admin_oversight.sql). Admin People, Watchlist and Audit tabs, append-only ledger and audit log, circular-referral guard.
 
 Check: **Table Editor** in the sidebar now lists `drivers`, `jobs`, `profiles`, `settings` and a few more.
 

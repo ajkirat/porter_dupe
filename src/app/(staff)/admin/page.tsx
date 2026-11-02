@@ -8,17 +8,21 @@ import BulkCreditTab from "./BulkCreditTab";
 import DriversTab from "./DriversTab";
 import RewardsTab from "./RewardsTab";
 import VehiclesTab from "./VehiclesTab";
+import AuditTab from "./AuditTab";
+import PeopleTab from "./PeopleTab";
+import WatchlistTab from "./WatchlistTab";
 import LedgerTab from "./LedgerTab";
 import MetricsTab from "./MetricsTab";
 import TodayTab from "./TodayTab";
 import SettingsTab from "./SettingsTab";
 import TripsTab from "./TripsTab";
 
-const TABS = ["Today", "Trips", "Drivers", "Bulk credit", "Referrals", "Ledger", "Metrics", "Vehicles", "Settings"] as const;
+const TABS = ["Today", "Trips", "Drivers", "People", "Watchlist", "Bulk credit", "Referrals", "Ledger", "Metrics", "Vehicles", "Audit", "Settings"] as const;
 
 function Admin() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Today");
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [focus, setFocus] = useState<{ id: string; kind: "driver" | "customer" } | null>(null);
   const [activePass, setActivePass] = useState<Record<string, DriverPass>>({});
 
   const load = useCallback(async () => {
@@ -40,6 +44,12 @@ function Admin() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
+
+  // Jump to one person from the watchlist, audit log or Today list.
+  const openPerson = (id: string) => {
+    setFocus({ id, kind: drivers.some((d) => d.id === id) ? "driver" : "customer" });
+    setTab("People");
+  };
 
   const eligible = drivers.filter((d) => d.kyc_status === "approved" && activePass[d.id]);
   const pending = drivers.filter((d) => d.kyc_status === "pending").length;
@@ -63,6 +73,9 @@ function Admin() {
       {tab === "Today" && <TodayTab drivers={drivers} activePass={activePass} go={setTab} />}
       {tab === "Ledger" && <LedgerTab />}
       {tab === "Metrics" && <MetricsTab />}
+      {tab === "People" && <PeopleTab key={focus?.id ?? "list"} focus={focus} clearFocus={() => setFocus(null)} />}
+      {tab === "Watchlist" && <WatchlistTab open={openPerson} />}
+      {tab === "Audit" && <AuditTab open={openPerson} />}
       {tab === "Trips" && <TripsTab eligible={eligible} />}
       {tab === "Drivers" && <DriversTab drivers={drivers} activePass={activePass} reload={load} />}
       {tab === "Bulk credit" && <BulkCreditTab />}
