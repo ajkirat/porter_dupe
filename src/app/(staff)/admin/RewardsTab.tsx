@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { errorText, supabase } from "@/lib/supabase";
 import type { RewardSettings } from "@/lib/types";
+import ReferralFlows, { FLOWS } from "./ReferralFlows";
+
+const SUBS = ["Overview", ...FLOWS.map((f) => f.tab), "Wallet limits"] as const;
 
 type Entry = { id: string; user_id: string; wallet: "customer" | "driver"; amount_rupees: number; remaining_rupees: number; expires_at: string | null; kind: string; note: string | null; created_at: string };
 type Referral = { id: string; referrer_id: string; referred_id: string; wallet: "customer" | "driver"; status: string; created_at: string; rewarded_at: string | null };
@@ -19,15 +22,8 @@ const KIND: Record<string, string> = {
 };
 
 const NUMBERS: { key: keyof RewardSettings; label: string; hint?: string }[] = [
-  { key: "referral_driver_reward", label: "Driver referral reward (₹)", hint: "Fee credit for the referring driver" },
-  { key: "referral_driver_trips", label: "Referred driver must finish (trips)", hint: "Reward is paid after this many deliveries" },
-  { key: "referral_customer_trips", label: "Referred customer must have (deliveries)", hint: "Reward goes to the driver who referred them" },
-  { key: "referral_customer_welcome", label: "New customer credit (₹)", hint: "Given to the new customer when they add a code" },
-  { key: "referral_customer_reward", label: "Reward for referring a customer (₹)", hint: "Paid to the referring DRIVER. Customers earn nothing for referring." },
-  { key: "referral_max_driver", label: "Max paid driver referrals per month" },
-  { key: "referral_max_customer", label: "Max paid customer referrals per month" },
-  { key: "referral_min_trip_m", label: "First trip must be at least (metres)", hint: "Shorter trips do not count" },
-  { key: "referral_min_fare", label: "First trip fare must be at least (₹)" },
+  { key: "referral_min_trip_m", label: "A counted trip must be at least (metres)", hint: "Shorter trips do not count towards any referral or bonus" },
+  { key: "referral_min_fare", label: "A counted trip fare must be at least (₹)" },
   { key: "wallet_max_percent", label: "Wallet can cover at most (% of a fare)" },
   { key: "wallet_expiry_days", label: "New credit expires after (days, 0 = never)", hint: "Applies to credit given from now on. Oldest credit is used first." },
 ];
@@ -39,6 +35,7 @@ export default function RewardsTab() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [people, setPeople] = useState<Record<string, Person>>({});
+  const [sub, setSub] = useState<(typeof SUBS)[number]>("Overview");
   const [msg, setMsg] = useState("");
   const [missing, setMissing] = useState(false);
   const [asOf] = useState(() => Date.now());
@@ -46,7 +43,7 @@ export default function RewardsTab() {
   const load = useCallback(async () => {
     const sb = supabase();
     const [st, en, rf] = await Promise.all([
-      sb.from("settings").select("referral_driver_trips, referral_customer_trips, referral_driver_enabled, referral_customer_enabled, referral_driver_reward, referral_customer_reward, referral_customer_welcome, referral_max_driver, referral_max_customer, referral_min_trip_m, referral_min_fare, wallet_max_percent, wallet_expiry_days").single(),
+      sb.from("settings").select("referral_min_trip_m, referral_min_fare, wallet_max_percent, wallet_expiry_days").single(),
       sb.from("wallet_entries").select("*").order("created_at", { ascending: false }).limit(5000),
       sb.from("referrals").select("*").order("created_at", { ascending: false }).limit(1000),
     ]);
@@ -117,13 +114,25 @@ export default function RewardsTab() {
     setS({ ...s, [k]: v });
   };
 
-  const km = (s.referral_min_trip_m / 1000).toFixed(1).replace(/\.0$/, "");
   const outstanding = (w: "customer" | "driver") => totals.t[w].given - totals.t[w].spent - totals.t[w].lapsed;
   const counts = (st: string) => referrals.filter((r) => r.status === st).length;
 
+  const flowTab = FLOWS.find((f) => f.tab === sub);
+  const subBar = (
+    <div className="flex flex-wrap gap-2 text-sm">
+      {SUBS.map((t) => (
+        <button key={t} className={`btn py-1.5 ${sub === t ? "btn-primary" : ""}`} onClick={() => setSub(t)}>
+          {t}
+        </button>
+      ))}
+    </div>
+  );
+  if (flowTab) return <div className="space-y-5">{subBar}<ReferralFlows key={flowTab.flow} flow={flowTab.flow} /></div>;
+
   return (
     <div className="space-y-5">
-      <div className="grid gap-3 sm:grid-cols-3">
+      {subBar}
+      {sub === "Overview" && <div className="grid gap-3 sm:grid-cols-3">
         <div className="card">
           <p className="text-xs text-stone-500">Customer credit outstanding</p>
           <p className="text-2xl font-bold">₹{outstanding("customer")}</p>
@@ -139,20 +148,10 @@ export default function RewardsTab() {
           <p className="text-2xl font-bold">{referrals.length}</p>
           <p className="text-xs text-stone-500">{counts("pending")} waiting · {counts("rewarded")} paid · {counts("capped")} over the limit</p>
         </div>
-      </div>
+      </div>}
 
-      <form onSubmit={save} className="card max-w-2xl space-y-4">
-        <h2 className="font-semibold">Rules</h2>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={s.referral_driver_enabled} onChange={(e) => set("referral_driver_enabled", e.target.checked)} />
-            Driver referrals are on
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={s.referral_customer_enabled} onChange={(e) => set("referral_customer_enabled", e.target.checked)} />
-            Customer referrals are on
-          </label>
-        </div>
+      {sub === "Wallet limits" && <form onSubmit={save} className="card max-w-2xl space-y-4">
+        <h2 className="font-semibold">Wallet and counting rules</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           {NUMBERS.map((f) => (
             <label key={f.key} className="label">
@@ -165,14 +164,6 @@ export default function RewardsTab() {
         <div className="space-y-1 rounded-xl bg-stone-50 p-3 text-sm text-stone-700">
           <p className="font-medium">What these rules do, in plain words</p>
           <p>
-            <b>IF</b> driver referrals are {s.referral_driver_enabled ? "on" : "off"} <b>AND</b> a new driver adds a code before their first delivery <b>AND</b> they finish {s.referral_driver_trips} trips of at least {km} km each
-            {s.referral_min_fare > 0 && <> and ₹{s.referral_min_fare}</>} <b>THEN</b> the referring driver gets ₹{s.referral_driver_reward} (up to {s.referral_max_driver} a month).
-          </p>
-          <p>
-            <b>IF</b> customer referrals are {s.referral_customer_enabled ? "on" : "off"} <b>AND</b> a new customer adds a code before booking <b>THEN</b> they get ₹{s.referral_customer_welcome} right away,
-            <b> AND IF</b> they have {s.referral_customer_trips} deliveries (each at least {km} km) <b>AND</b> the person who referred them is a driver <b>THEN</b> that driver gets ₹{s.referral_customer_reward} (up to {s.referral_max_customer} a month).
-          </p>
-          <p>
             <b>IF</b> a customer has credit <b>THEN</b> it covers at most {s.wallet_max_percent}% of a fare. Pikop pays the driver that amount as wallet credit after delivery.
           </p>
           <p>
@@ -182,9 +173,9 @@ export default function RewardsTab() {
         </div>
         <button className="btn btn-primary w-full">Save rules</button>
         {msg && <p className="text-sm text-stone-600">{msg}</p>}
-      </form>
+      </form>}
 
-      <div className="space-y-2">
+      {sub === "Overview" && <><div className="space-y-2">
         <h2 className="font-semibold">Wallet balances</h2>
         {totals.balances.length === 0 && <p className="card text-sm text-stone-500">No credit has been given yet.</p>}
         {totals.balances.map((b) => (
@@ -228,6 +219,7 @@ export default function RewardsTab() {
           </div>
         ))}
       </div>
+      </>}
     </div>
   );
 }
