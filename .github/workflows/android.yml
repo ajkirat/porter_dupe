@@ -5,9 +5,16 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# A newer build replaces an older one that is still running, so the download link always gets the newest APK.
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       HAS_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
@@ -41,6 +48,19 @@ jobs:
         with:
           name: pikop-customer-test-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      # Also put the APK on a fixed release, so it can be downloaded straight to a phone (no zip, no GitHub login):
+      # https://github.com/${{ github.repository }}/releases/download/test-apk/pikop-customer-test.apk
+      - name: Publish test APK as a direct download
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk pikop-customer-test.apk
+          gh release view test-apk >/dev/null 2>&1 || gh release create test-apk --prerelease \
+            --title "Pikop customer test APK (latest build)" \
+            --notes "Test build for your own phone. Every push to main replaces the APK here. Not for the Play Store."
+          gh release upload test-apk pikop-customer-test.apk --clobber
 
       - name: Build Play Store bundle (release)
         if: env.HAS_KEY == 'true'
